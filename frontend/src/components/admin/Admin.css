@@ -1,0 +1,142 @@
+/* Admin Dashboard Specific Styles */
+
+.admin-dashboard .sidebar {
+  max-height: calc(100vh - 100px);
+}
+
+.archive-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.archive-card:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.archive-card.active {
+  background: #fff3e0;
+  border-color: #ff9800;
+}
+
+.archive-card h4 {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.archive-date {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.archive-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: #555;
+}
+
+.archive-stats span {
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Archive Header */
+
+.archive-header {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.archive-header h2 {
+  margin-bottom: 10px;
+}
+
+.archive-meta {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.archive-meta p {
+  margin-bottom: 5px;
+}
+
+/* Archived Posts */
+
+.archived-posts {
+  margin-top: 30px;
+}
+
+.archived-posts h3 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.archived-post-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.archived-post-card .post-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.archived-post-card .post-content {
+  margin: 15px 0;
+}
+
+.archived-post-card .post-content p {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.archived-post-card .tutor-response {
+  background: #e8f5e9;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.archived-post-card .post-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.answered-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #4caf50;
+  color: white;
+  font-weight: 600;
+}
+
+.unanswered-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #ff9800;
+  color: white;
+  font-weight: 600;
+}
