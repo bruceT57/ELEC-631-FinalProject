@@ -1,0 +1,23 @@
+# Node
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Env / secrets
+.env
+**/.env
+
+# Builds / caches
+dist/
+build/
+coverage/
+.vscode/
+.DS_Store
+*.log
+*.lock-wscript
+
+# Frontend tooling
+**/.vite/
+.next/
+out/

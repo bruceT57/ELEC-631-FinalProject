@@ -1,153 +1,129 @@
-import jwt from 'jsonwebtoken';
-import { User, IUser, UserRole } from '../models';
+import bcrypt from 'bcryptjs';
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
+import { Types } from 'mongoose';
+import { User } from '../models';
 import config from '../config/config';
 
-/**
- * Token payload interface
- */
-export interface ITokenPayload {
-  userId: string;
-  email: string;
-  role: UserRole;
-}
-
-/**
- * Registration data interface
- */
 export interface IRegistrationData {
-  username: string;
+  name: string;
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  role: UserRole;
 }
 
-/**
- * Authentication Service class
- */
+export interface IUser {
+  _id: Types.ObjectId | string;
+  name: string;
+  email: string;
+  password?: string;
+  role?: string;
+}
+
+export interface ITokenPayload {
+  userId: string;
+  role?: string;
+}
+
 class AuthService {
-  /**
-   * Register a new user
-   */
-  public async register(data: IRegistrationData): Promise<{ user: IUser; token: string }> {
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email: data.email }, { username: data.username }]
-    });
+  public async register(data: IRegistrationData): Promise<{ token: string; user: Omit<IUser, 'password'> }> {
+  const existing = await User.findOne({ email: data.email }).lean();
+  if (existing) throw new Error('Email already registered');
 
-    if (existingUser) {
-      throw new Error('User with this email or username already exists');
-    }
+  const hashed = await bcrypt.hash(data.password, 10);
 
-    // Create new user
-    const user = new User(data);
-    await user.save();
+  // Provide safe defaults that many schemas expect (adjust if not used)
+  const created = await User.create({
+    name: data.name,
+    email: data.email,
+    password: hashed,
+    role: (typeof (User as any).schema?.paths?.role !== 'undefined') ? 'student' : undefined,
+    provider: (typeof (User as any).schema?.paths?.provider !== 'undefined') ? 'local' : undefined,
+    createdAt: (typeof (User as any).schema?.paths?.createdAt !== 'undefined') ? new Date() : undefined,
+    updatedAt: (typeof (User as any).schema?.paths?.updatedAt !== 'undefined') ? new Date() : undefined,
+  });
 
-    // Generate token
-    const token = this.generateToken(user);
+  const userId = (created as any)._id?.toString?.() ?? String((created as any)._id);
+  const safeUser = {
+    _id: userId,
+    name: (created as any).name,
+    email: (created as any).email,
+    role: (created as any).role,
+  } as Omit<IUser, 'password'>;
 
-    return { user, token };
+  const token = this.generateToken({ ...(safeUser as any), _id: userId } as IUser);
+  return { token, user: safeUser };
+}
+
+  public async login(email: string, password: string): Promise<{ token: string; user: Omit<IUser, 'password'> }> {
+    const userDoc = await User.findOne({ email });
+    if (!userDoc) throw new Error('Invalid credentials');
+
+    const ok = await bcrypt.compare(password, (userDoc as any).password || '');
+    if (!ok) throw new Error('Invalid credentials');
+
+    const userId = (userDoc as any)._id?.toString?.() ?? String((userDoc as any)._id);
+
+    const safeUser = {
+      _id: userId,
+      name: (userDoc as any).name,
+      email: (userDoc as any).email,
+      role: (userDoc as any).role,
+    } as Omit<IUser, 'password'>;
+
+    const token = this.generateToken({ ...(safeUser as any), _id: userId } as IUser);
+    return { token, user: safeUser };
   }
 
-  /**
-   * Login user
-   */
-  public async login(email: string, password: string): Promise<{ user: IUser; token: string }> {
-    // Find user by email
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      throw new Error('Invalid email or password');
+  public async getUserById(userId: string): Promise<Omit<IUser, 'password'> | null> {
+    const doc = await User.findById(userId).select('-password').lean();
+    if (!doc) return null;
+    return {
+      _id: (doc as any)._id?.toString?.() ?? String((doc as any)._id),
+      name: (doc as any).name,
+      email: (doc as any).email,
+      role: (doc as any).role,
+    } as Omit<IUser, 'password'>;
     }
 
-    // Compare password
-    const isPasswordValid = await user.comparePassword(password);
+  public async updateProfile(userId: string, updates: Partial<Pick<IUser, 'name' | 'email' | 'role'>>)
+    : Promise<Omit<IUser, 'password'>> {
+    const updated = await User.findByIdAndUpdate(userId, updates, { new: true })
+      .select('-password');
+    if (!updated) throw new Error('User not found');
 
-    if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
-    }
-
-    // Generate token
-    const token = this.generateToken(user);
-
-    return { user, token };
+    return {
+      _id: ((updated as any)._id)?.toString?.() ?? String((updated as any)._id),
+      name: (updated as any).name,
+      email: (updated as any).email,
+      role: (updated as any).role,
+    } as Omit<IUser, 'password'>;
   }
 
-  /**
-   * Generate JWT token
-   */
+  public async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+    const userDoc = await User.findById(userId);
+    if (!userDoc) throw new Error('User not found');
+
+    const ok = await bcrypt.compare(oldPassword, (userDoc as any).password || '');
+    if (!ok) throw new Error('Old password is incorrect');
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    (userDoc as any).password = hashed;
+    await userDoc.save();
+  }
+
   public generateToken(user: IUser): string {
-    const payload: ITokenPayload = {
-      userId: user._id.toString(),
-      email: user.email,
-      role: user.role
-    };
+    const userId = (user as any)._id?.toString?.() ?? String((user as any)._id);
+    const payload: ITokenPayload = { userId, role: (user as any).role };
 
-    return jwt.sign(payload, config.jwtSecret, {
-      expiresIn: config.jwtExpiresIn
-    });
+    const secret: Secret = (config.jwtSecret as unknown as Secret) ?? '';
+    const expiresIn: SignOptions['expiresIn'] = (config.jwtExpiresIn as any) ?? '7d';
+
+    return jwt.sign(payload, secret, { expiresIn });
   }
 
-  /**
-   * Verify JWT token
-   */
   public verifyToken(token: string): ITokenPayload {
-    try {
-      return jwt.verify(token, config.jwtSecret) as ITokenPayload;
-    } catch (error) {
-      throw new Error('Invalid or expired token');
-    }
-  }
-
-  /**
-   * Get user by ID
-   */
-  public async getUserById(userId: string): Promise<IUser | null> {
-    return User.findById(userId).select('-password');
-  }
-
-  /**
-   * Update user profile
-   */
-  public async updateProfile(
-    userId: string,
-    updates: Partial<IUser>
-  ): Promise<IUser | null> {
-    // Remove sensitive fields from updates
-    delete (updates as any).password;
-    delete (updates as any).role;
-
-    const user = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true
-    }).select('-password');
-
-    return user;
-  }
-
-  /**
-   * Change password
-   */
-  public async changePassword(
-    userId: string,
-    oldPassword: string,
-    newPassword: string
-  ): Promise<void> {
-    const user = await User.findById(userId);
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const isPasswordValid = await user.comparePassword(oldPassword);
-
-    if (!isPasswordValid) {
-      throw new Error('Invalid old password');
-    }
-
-    user.password = newPassword;
-    await user.save();
+    const secret: Secret = (config.jwtSecret as unknown as Secret) ?? '';
+    const decoded = jwt.verify(token, secret);
+    return decoded as ITokenPayload;
   }
 }
 

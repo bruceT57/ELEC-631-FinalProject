@@ -1,91 +1,93 @@
-import { Request, Response, NextFunction } from 'express';
-import AuthService, { ITokenPayload } from '../services/AuthService';
-import { UserRole } from '../models';
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import config from "../config/config";
+import { UserRole } from "../models/User";
 
 /**
- * Extend Express Request to include user information
+ * The controller imports this as:
+ *   import { AuthRequest } from '../middleware/auth';
+ * and expects req.user.userId to exist.
+ * We define it explicitly here so controllers compile even without any global augmentation.
  */
 export interface AuthRequest extends Request {
-  user?: ITokenPayload;
+  user?: {
+    id: string;            // canonical id
+    userId: string;        // alias some controllers/services use
+    email: string;
+    username: string;
+    role?: string;
+  };
+}
+
+/** Claims embedded in JWTs (adjust keys to match your token issuer) */
+interface JwtClaims {
+  sub: string;                 // user id
+  email: string;
+  username: string;
+  role?: UserRole | string;
+  iat?: number;
+  exp?: number;
 }
 
 /**
- * Authentication Middleware class
+ * Authenticate: requires a valid Bearer token.
+ * - Verifies JWT
+ * - Populates req.user with both id and userId
+ * - 401 on missing/invalid token
  */
-class AuthMiddleware {
-  /**
-   * Verify JWT token from request header
-   */
-  public authenticate = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      // Get token from Authorization header
-      const authHeader = req.headers.authorization;
+function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
 
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        res.status(401).json({ error: 'No token provided' });
-        return;
-      }
-
-      const token = authHeader.substring(7);
-
-      // Verify token
-      const payload = AuthService.verifyToken(token);
-
-      // Attach user to request
-      req.user = payload;
-
-      next();
-    } catch (error: any) {
-      res.status(401).json({ error: error.message || 'Unauthorized' });
+    if (!token) {
+      return res.status(401).json({ error: "Missing authorization token" });
     }
-  };
 
-  /**
-   * Check if user has required role
-   */
-  public authorize = (...roles: UserRole[]) => {
-    return (req: AuthRequest, res: Response, next: NextFunction): void => {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
+    const secret = (config as any).jwtSecret || process.env.JWT_SECRET;
+    if (!secret) {
+      return res
+        .status(500)
+        .json({ error: "Server misconfiguration: missing JWT secret" });
+    }
 
-      if (!roles.includes(req.user.role)) {
-        res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
-        return;
-      }
+    const decoded = jwt.verify(token, secret) as JwtClaims;
 
-      next();
+    const uid = decoded.sub;
+    req.user = {
+      id: uid,               // canonical
+      userId: uid,           // alias used by controllers
+      email: decoded.email,
+      username: decoded.username,
+      role: (decoded.role as string) ?? UserRole.STUDENT,
     };
-  };
 
-  /**
-   * Optional authentication - doesn't fail if no token
-   */
-  public optionalAuth = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const authHeader = req.headers.authorization;
+    return next();
+  } catch (err) {
+    console.error("Auth error:", err);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
 
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        const payload = AuthService.verifyToken(token);
-        req.user = payload;
-      }
+/**
+ * Authorize: ensure the authenticated user has one of the allowed roles.
+ * Use like: AuthMiddleware.authorize(UserRole.TUTOR, UserRole.ADMIN)
+ */
+function authorize(...allowed: UserRole[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    const role = req.user?.role as UserRole | undefined;
 
-      next();
-    } catch (error) {
-      // Continue without authentication
-      next();
+    if (!role) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    if (allowed.length > 0 && !allowed.includes(role)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    return next();
   };
 }
 
-export default new AuthMiddleware();
+const AuthMiddleware = { authenticate, authorize };
+export default AuthMiddleware;

@@ -1,160 +1,87 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import config from './config/config';
-import { rateLimiter, authRateLimiter } from './middleware/rateLimiter';
+import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
+import morgan from "morgan";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
-/**
- * API Gateway Application class
- */
-class Gateway {
-  public app: Application;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+const BACKEND = process.env.BACKEND_URL || "http://localhost:5000";
 
-  constructor() {
-    this.app = express();
-    this.initializeMiddleware();
-    this.initializeProxies();
-    this.initializeRoutes();
-    this.initializeErrorHandling();
-  }
+const app = express();
 
-  /**
-   * Initialize middleware
-   */
-  private initializeMiddleware(): void {
-    // CORS
-    this.app.use(
-      cors({
-        origin: config.frontendUrl,
-        credentials: true
-      })
-    );
+// ---------- Core middleware (MUST be before proxy) ----------
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:4000"],
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(morgan("dev"));
 
-    // Body parser
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// ---------- Health ----------
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: "OK",
+    gateway: true,
+    target: BACKEND,
+    ts: new Date().toISOString(),
+  });
+});
 
-    // Request logging
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] ${req.method} ${req.path} - Gateway`);
-      next();
-    });
+// ---------- Debug echo (to verify gateway sees JSON) ----------
+app.post("/debug/echo", (req: Request, res: Response) => {
+  res.json({ headers: req.headers, body: req.body });
+});
 
-    // Apply general rate limiting
-    this.app.use('/api/', rateLimiter);
-  }
+// ---------- Helper: reattach JSON body to proxied request ----------
+function attachBodyIfPresent(proxyReq: any, req: Request) {
+  const hasBody = req.body && Object.keys(req.body).length > 0;
+  if (!hasBody) return;
 
-  /**
-   * Initialize proxy routes
-   */
-  private initializeProxies(): void {
-    // Proxy authentication requests with stricter rate limiting
-    this.app.use(
-      '/api/auth',
-      authRateLimiter,
-      createProxyMiddleware({
-        target: config.backendUrl,
-        changeOrigin: true,
-        onProxyReq: (proxyReq, req, res) => {
-          console.log(`Proxying to backend: ${req.method} ${req.path}`);
-        },
-        onError: (err, req, res) => {
-          console.error('Proxy error:', err);
-          (res as Response).status(500).json({
-            error: 'Gateway error: Unable to reach backend service'
-          });
-        }
-      })
-    );
+  const contentType = (req.headers["content-type"] || "").toString();
+  const isJson = contentType.includes("application/json");
+  if (!isJson) return;
 
-    // Proxy all other API requests
-    this.app.use(
-      '/api',
-      createProxyMiddleware({
-        target: config.backendUrl,
-        changeOrigin: true,
-        onProxyReq: (proxyReq, req, res) => {
-          console.log(`Proxying to backend: ${req.method} ${req.path}`);
-        },
-        onError: (err, req, res) => {
-          console.error('Proxy error:', err);
-          (res as Response).status(500).json({
-            error: 'Gateway error: Unable to reach backend service'
-          });
-        }
-      })
-    );
-  }
-
-  /**
-   * Initialize direct routes
-   */
-  private initializeRoutes(): void {
-    // Gateway health check
-    this.app.get('/health', (req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'OK',
-        service: 'API Gateway',
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    // Gateway info
-    this.app.get('/info', (req: Request, res: Response) => {
-      res.status(200).json({
-        service: 'Tutoring Tool API Gateway',
-        version: '1.0.0',
-        environment: config.nodeEnv,
-        backendUrl: config.backendUrl
-      });
-    });
-
-    // 404 handler
-    this.app.use((req: Request, res: Response) => {
-      res.status(404).json({
-        error: 'Gateway: Route not found',
-        path: req.path
-      });
-    });
-  }
-
-  /**
-   * Initialize error handling
-   */
-  private initializeErrorHandling(): void {
-    this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-      console.error('Gateway Error:', err);
-
-      res.status(500).json({
-        error: 'Gateway internal error',
-        message: err.message,
-        ...(config.nodeEnv === 'development' && { stack: err.stack })
-      });
-    });
-  }
-
-  /**
-   * Start the gateway
-   */
-  public start(): void {
-    config.validate();
-
-    this.app.listen(config.port, () => {
-      console.log('');
-      console.log('='.repeat(50));
-      console.log(`✓ API Gateway running on http://localhost:${config.port}`);
-      console.log(`✓ Proxying to backend: ${config.backendUrl}`);
-      console.log(`✓ Environment: ${config.nodeEnv}`);
-      console.log(`✓ Rate limiting: Active`);
-      console.log('='.repeat(50));
-      console.log('');
-    });
-  }
+  const bodyData = JSON.stringify(req.body);
+  proxyReq.setHeader("Content-Type", "application/json");
+  proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+  proxyReq.write(bodyData);
 }
 
-// Create and start gateway
-const gateway = new Gateway();
-gateway.start();
+// ---------- Proxy /api/* straight to backend (no path rewrite) ----------
+app.use(
+  "/api",
+  createProxyMiddleware({
+    target: BACKEND,
+    changeOrigin: true,
+    ws: false,
+    proxyTimeout: 15000,
+    timeout: 15000,
+    logLevel: "warn", // set 'debug' if you need deeper logs
+    onProxyReq: (proxyReq, req, res) => {
+      attachBodyIfPresent(proxyReq, req as Request);
+    },
+    onError: (err, req, res) => {
+      console.error("[Gateway] Proxy error:", err.message);
+      const r = res as Response;
+      if (!r.headersSent) {
+        r.status(502).json({ error: "Bad gateway", detail: err.message });
+      }
+    },
+  })
+);
 
-export default gateway.app;
+// ---------- 404 & error handler ----------
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: "Gateway: Route not found", path: req.path });
+});
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("[Gateway] Unhandled error:", err);
+  res.status(500).json({ error: "Gateway error", detail: err.message });
+});
+
+app.listen(PORT, () => {
+  console.log(`\n===== Gateway running on http://localhost:${PORT} → ${BACKEND} =====\n`);
+});
