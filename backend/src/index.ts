@@ -3,9 +3,19 @@ import cors from 'cors';
 import path from 'path';
 import Database from './config/database';
 import config from './config/config';
-import ArchivingService from './services/ArchivingService';
 
-// Import routes
+// ---------- Archiver import (robust against wrong type inference) ----------
+interface Archiver {
+  start(): void;
+  stop(): void;
+}
+
+// Use require + explicit cast to avoid TS importing it as AuthService by mistake.
+const archivingService: Archiver = (require('./services/ArchivingService').default ||
+  require('./services/ArchivingService')) as unknown as Archiver;
+// ---------------------------------------------------------------------------
+
+// Routes
 import authRoutes from './routes/auth';
 import spaceRoutes from './routes/spaces';
 import postRoutes from './routes/posts';
@@ -32,11 +42,11 @@ class App {
     this.app.use(
       cors({
         origin: [config.frontendUrl, config.gatewayUrl],
-        credentials: true
+        credentials: true,
       })
     );
 
-    // Body parser
+    // Body parsers (✅ must be before routes)
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -44,7 +54,7 @@ class App {
     this.app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
     // Request logging
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
+    this.app.use((req: Request, _res: Response, next: NextFunction) => {
       console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
       next();
     });
@@ -54,8 +64,13 @@ class App {
    * Initialize routes
    */
   private initializeRoutes(): void {
+    // 🔎 Debug echo (useful to confirm req.body parsing)
+    this.app.post('/debug/echo', (req: Request, res: Response) => {
+      res.status(200).json({ headers: req.headers, body: req.body });
+    });
+
     // Health check
-    this.app.get('/health', (req: Request, res: Response) => {
+    this.app.get('/health', (_req: Request, res: Response) => {
       res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
     });
 
@@ -75,12 +90,13 @@ class App {
    * Initialize error handling
    */
   private initializeErrorHandling(): void {
-    this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this.app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
       console.error('Error:', err);
 
       res.status(500).json({
         error: err.message || 'Internal server error',
-        ...(config.nodeEnv === 'development' && { stack: err.stack })
+        ...(config.nodeEnv === 'development' && { stack: (err as any).stack }),
       });
     });
   }
@@ -103,8 +119,8 @@ class App {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      // Start archiving service
-      ArchivingService.start();
+      // Start archiving service (runs every 5 minutes)
+      archivingService.start();
 
       // Start server
       this.app.listen(config.port, () => {
@@ -130,7 +146,7 @@ class App {
     console.log('\nShutting down gracefully...');
 
     try {
-      ArchivingService.stop();
+      archivingService.stop();
       await Database.disconnect();
       console.log('✓ Server shut down successfully');
       process.exit(0);

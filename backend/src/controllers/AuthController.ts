@@ -1,140 +1,81 @@
 import { Request, Response } from 'express';
-import AuthService, { IRegistrationData } from '../services/AuthService';
-import { AuthRequest } from '../middleware/auth';
+import AuthService from '../services/AuthService';
 
-/**
- * Authentication Controller class
- */
 class AuthController {
-  /**
-   * Register new user
-   */
-  public async register(req: Request, res: Response): Promise<void> {
+  public async register(req: Request, res: Response) {
+  try {
+    // TEMP: log incoming body keys to spot FE/BE mismatch
+    console.log('[auth/register] raw body keys:', Object.keys(req.body || {}));
+
+    // Normalize common frontend names
+    const raw = req.body || {};
+    const name: string =
+      (raw.name ?? raw.fullName ?? raw.username ?? raw.displayName ?? '').toString().trim();
+    const email: string = (raw.email ?? raw.userEmail ?? '').toString().trim().toLowerCase();
+    const password: string = (raw.password ?? raw.pass ?? raw.pwd ?? '').toString();
+
+    console.log('[auth/register] normalized:', { name, email, passLen: password?.length ?? 0 });
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: { name: !!name, email: !!email, password: !!password },
+      });
+    }
+
+    const { token, user } = await AuthService.register({ name, email, password });
+    return res.status(201).json({ token, user });
+  } catch (err: any) {
+    console.error('[auth/register] ERROR:', err?.message, err);
+    const msg = (err?.message || '').toLowerCase();
+    if (msg.includes('already registered') || msg.includes('duplicate')) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+    return res.status(400).json({ error: err?.message || 'Registration failed' });
+  }
+}
+
+
+  public async login(req: Request, res: Response) {
     try {
-      const registrationData: IRegistrationData = req.body;
-
-      const { user, token } = await AuthService.register(registrationData);
-
-      res.status(201).json({
-        message: 'User registered successfully',
-        user: user.getPublicProfile(),
-        token
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        error: error.message || 'Registration failed'
-      });
+      const { email, password } = req.body as { email: string; password: string };
+      const { token, user } = await AuthService.login(email, password);
+      return res.status(200).json({ token, user });
+    } catch (err: any) {
+      return res.status(401).json({ error: err.message || 'Invalid credentials' });
     }
   }
 
-  /**
-   * Login user
-   */
-  public async login(req: Request, res: Response): Promise<void> {
+  public async me(req: Request & { user?: { userId: string } }, res: Response) {
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        res.status(400).json({ error: 'Email and password are required' });
-        return;
-      }
-
-      const { user, token } = await AuthService.login(email, password);
-
-      res.status(200).json({
-        message: 'Login successful',
-        user: user.getPublicProfile(),
-        token
-      });
-    } catch (error: any) {
-      res.status(401).json({
-        error: error.message || 'Login failed'
-      });
-    }
-  }
-
-  /**
-   * Get current user profile
-   */
-  public async getProfile(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
+      if (!req.user?.userId) return res.status(401).json({ error: 'Unauthorized' });
       const user = await AuthService.getUserById(req.user.userId);
-
-      if (!user) {
-        res.status(404).json({ error: 'User not found' });
-        return;
-      }
-
-      res.status(200).json({
-        user: user.getPublicProfile()
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        error: error.message || 'Failed to get profile'
-      });
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      return res.status(200).json({ user });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to fetch profile' });
     }
   }
 
-  /**
-   * Update user profile
-   */
-  public async updateProfile(req: AuthRequest, res: Response): Promise<void> {
+  public async updateProfile(req: Request & { user?: { userId: string } }, res: Response) {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
-      const updates = req.body;
+      if (!req.user?.userId) return res.status(401).json({ error: 'Unauthorized' });
+      const updates = req.body as Partial<{ name: string; email: string; role: string }>;
       const user = await AuthService.updateProfile(req.user.userId, updates);
-
-      if (!user) {
-        res.status(404).json({ error: 'User not found' });
-        return;
-      }
-
-      res.status(200).json({
-        message: 'Profile updated successfully',
-        user: user.getPublicProfile()
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        error: error.message || 'Failed to update profile'
-      });
+      return res.status(200).json({ user });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Failed to update profile' });
     }
   }
 
-  /**
-   * Change password
-   */
-  public async changePassword(req: AuthRequest, res: Response): Promise<void> {
+  public async changePassword(req: Request & { user?: { userId: string } }, res: Response) {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
-      const { oldPassword, newPassword } = req.body;
-
-      if (!oldPassword || !newPassword) {
-        res.status(400).json({ error: 'Old and new passwords are required' });
-        return;
-      }
-
+      if (!req.user?.userId) return res.status(401).json({ error: 'Unauthorized' });
+      const { oldPassword, newPassword } = req.body as { oldPassword: string; newPassword: string };
       await AuthService.changePassword(req.user.userId, oldPassword, newPassword);
-
-      res.status(200).json({
-        message: 'Password changed successfully'
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        error: error.message || 'Failed to change password'
-      });
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Failed to change password' });
     }
   }
 }

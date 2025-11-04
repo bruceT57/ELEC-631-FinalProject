@@ -1,73 +1,76 @@
-import { Post, IPost, InputType, DifficultyLevel } from '../models';
+import { SortOrder } from 'mongoose';
+import { Post } from '../models';
 import AIRankingService from './AIRankingService';
-import mongoose from 'mongoose';
 
-/**
- * Post creation data interface
- */
+export interface IPostMedia {
+  url: string;
+  mimeType?: string;
+  originalName?: string;
+}
+
 export interface IPostData {
   spaceId: string;
   studentId: string;
   question: string;
-  inputType: InputType;
+  inputType?: string;
+  difficultyLevel?: string;
+  knowledgePoints?: string[];
+  // Added to satisfy controller usage:
   originalText?: string;
-  mediaAttachments?: Array<{
-    url: string;
-    type: string;
-    originalName: string;
-  }>;
+  mediaAttachments?: IPostMedia[];
 }
 
-/**
- * Post Service class
- */
 class PostService {
-  /**
-   * Create a new post
-   */
-  public async createPost(data: IPostData): Promise<IPost> {
-    // Create post
-    const post = new Post({
-      ...data,
-      difficultyLevel: DifficultyLevel.UNRANKED,
-      difficultyScore: 0,
-      knowledgePoints: [],
-      isAnswered: false
+  /** Create a post and kick off background AI analysis */
+  public async createPost(data: IPostData) {
+    const post = await Post.create({
+      spaceId: data.spaceId,
+      studentId: data.studentId,
+      question: data.question,
+      inputType: data.inputType,
+      difficultyLevel: data.difficultyLevel,
+      knowledgePoints: data.knowledgePoints ?? [],
+      originalText: data.originalText,            // <- optional
+      mediaAttachments: data.mediaAttachments ?? [], // <- optional
+      isAnswered: false,
     });
 
-    await post.save();
-
-    // Analyze question in background (don't wait)
-    this.analyzePostInBackground(post._id.toString(), data.question);
+    // Normalize _id safely to string for background task
+    const postId = (post as any)?._id?.toString?.() ?? String((post as any)?._id);
+    this.analyzePostInBackground(postId, data.question).catch((err) =>
+      console.error('AI analysis failed:', err)
+    );
 
     return post;
   }
 
-  /**
-   * Analyze post difficulty in background
-   */
-  private async analyzePostInBackground(postId: string, question: string): Promise<void> {
+  /** Background AI analysis updates difficulty score etc. */
+  private async analyzePostInBackground(postId: string, question: string) {
     try {
-      const analysis = await AIRankingService.analyzeQuestion(question);
-
+      const result = await AIRankingService.analyzeQuestion(question);
       await Post.findByIdAndUpdate(postId, {
-        difficultyLevel: analysis.difficultyLevel,
-        difficultyScore: analysis.difficultyScore,
-        knowledgePoints: analysis.knowledgePoints
+        difficultyScore: result.difficultyScore,
+        knowledgePoints: result.knowledgePoints,
       });
-    } catch (error) {
-      console.error('Failed to analyze post:', error);
+    } catch (err) {
+      console.error(`analyzePostInBackground error for post ${postId}:`, err);
     }
   }
 
   /**
-   * Get posts by space ID, sorted by difficulty
+   * List posts in a space with sorting
+   * Accepts 'difficulty' | 'recent' | 'time' (alias for 'recent')
    */
   public async getPostsBySpace(
     spaceId: string,
-    sortBy: 'difficulty' | 'time' = 'difficulty'
-  ): Promise<IPost[]> {
-    const sortOption = sortBy === 'difficulty' ? { difficultyScore: -1 } : { createdAt: -1 };
+    sortBy: 'difficulty' | 'recent' | 'time' = 'recent'
+  ) {
+    const normalized = sortBy === 'time' ? 'recent' : sortBy;
+
+    const sortOption: Record<string, SortOrder> =
+      normalized === 'difficulty'
+        ? { difficultyScore: -1 as SortOrder }
+        : { createdAt: -1 as SortOrder };
 
     return Post.find({ spaceId })
       .populate('studentId', '-password')
@@ -75,118 +78,121 @@ class PostService {
       .sort(sortOption);
   }
 
-  /**
-   * Get posts by student
-   */
-  public async getPostsByStudent(studentId: string): Promise<IPost[]> {
+  /** List posts created by a specific student */
+  public async getPostsByStudent(studentId: string) {
     return Post.find({ studentId })
-      .populate('spaceId')
-      .populate('answeredBy', '-password')
-      .sort({ createdAt: -1 });
-  }
-
-  /**
-   * Get post by ID
-   */
-  public async getPostById(postId: string): Promise<IPost | null> {
-    return Post.findById(postId)
       .populate('studentId', '-password')
       .populate('answeredBy', '-password')
-      .populate('spaceId');
+      .sort({ createdAt: -1 as SortOrder });
   }
 
-  /**
-   * Answer a post (Tutor)
-   */
-  public async answerPost(
-    postId: string,
-    tutorId: string,
-    response: string
-  ): Promise<IPost | null> {
-    const post = await Post.findById(postId);
-
-    if (!post) {
-      throw new Error('Post not found');
-    }
-
-    post.markAsAnswered(tutorId as any, response);
-    await post.save();
-
-    return post;
+  /** Get a single post by id */
+  public async getPostById(postId: string) {
+    return Post.findById(postId)
+      .populate('studentId', '-password')
+      .populate('answeredBy', '-password');
   }
 
-  /**
-   * Update post
-   */
+  /** Tutor answers a post */
+  public async answerPost(postId: string, tutorId: string, tutorResponse: string) {
+    const updated = await Post.findByIdAndUpdate(
+      postId,
+      {
+        isAnswered: true,
+        answeredBy: tutorId,
+        tutorResponse,
+        answeredAt: new Date(),
+      },
+      { new: true }
+    )
+      .populate('studentId', '-password')
+      .populate('answeredBy', '-password');
+
+    return updated;
+  }
+
+  /** Update a post's fields (student editing or admin) */
   public async updatePost(
     postId: string,
-    updates: Partial<IPost>
-  ): Promise<IPost | null> {
-    // Don't allow updating sensitive fields
-    delete (updates as any).studentId;
-    delete (updates as any).spaceId;
-    delete (updates as any).difficultyScore;
+    updates: Partial<{
+      question: string;
+      inputType: string;
+      difficultyLevel: string;
+      knowledgePoints: string[];
+      originalText: string;
+      mediaAttachments: IPostMedia[];
+      isAnswered: boolean;
+      tutorResponse: string;
+      answeredBy: string;
+      answeredAt: Date;
+    }>
+  ) {
+    const updated = await Post.findByIdAndUpdate(postId, updates, { new: true })
+      .populate('studentId', '-password')
+      .populate('answeredBy', '-password');
 
-    return Post.findByIdAndUpdate(postId, updates, {
-      new: true,
-      runValidators: true
-    });
+    return updated;
   }
 
-  /**
-   * Delete a post
-   */
-  public async deletePost(postId: string): Promise<void> {
+  /** Delete a post */
+  public async deletePost(postId: string) {
     await Post.findByIdAndDelete(postId);
   }
 
-  /**
-   * Get unanswered posts in a space
-   */
-  public async getUnansweredPosts(spaceId: string): Promise<IPost[]> {
+  /** Unanswered posts in a space */
+  public async getUnansweredPosts(spaceId: string) {
     return Post.find({ spaceId, isAnswered: false })
       .populate('studentId', '-password')
-      .sort({ difficultyScore: -1 });
+      .populate('answeredBy', '-password')
+      .sort({ createdAt: -1 as SortOrder });
   }
 
-  /**
-   * Get knowledge summary for a space
-   */
-  public async getKnowledgeSummary(spaceId: string): Promise<string> {
-    const posts = await Post.find({ spaceId });
+  /** Knowledge point frequency summary for a space */
+  public async getKnowledgeSummary(spaceId: string) {
+    // Aggregation to count knowledgePoints occurrences
+    const pipeline = [
+      { $match: { spaceId } },
+      { $unwind: { path: '$knowledgePoints', preserveNullAndEmptyArrays: false } },
+      { $group: { _id: '$knowledgePoints', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ];
 
-    const allKnowledgePoints = posts.flatMap((post) => post.knowledgePoints);
-
-    return AIRankingService.generateKnowledgeSummary(allKnowledgePoints);
+    const rows = await (Post as any).aggregate(pipeline);
+    // Normalize to { point, count }
+    return rows.map((r: any) => ({ point: r._id, count: r.count }));
   }
 
-  /**
-   * Get post statistics for a space
-   */
+  /** Basic statistics for posts in a space */
   public async getPostStatistics(spaceId: string) {
-    const posts = await Post.find({ spaceId });
+    const [total, answered, agg] = await Promise.all([
+      Post.countDocuments({ spaceId }),
+      Post.countDocuments({ spaceId, isAnswered: true }),
+      Post.aggregate([
+        { $match: { spaceId } },
+        {
+          $group: {
+            _id: null,
+            avgDifficulty: { $avg: '$difficultyScore' },
+          },
+        },
+      ]),
+    ]);
 
-    const total = posts.length;
-    const answered = posts.filter((p) => p.isAnswered).length;
-    const unanswered = total - answered;
+    const avgDifficulty = agg?.[0]?.avgDifficulty ?? null;
 
-    const difficultyDistribution = {
-      easy: posts.filter((p) => p.difficultyLevel === DifficultyLevel.EASY).length,
-      medium: posts.filter((p) => p.difficultyLevel === DifficultyLevel.MEDIUM).length,
-      hard: posts.filter((p) => p.difficultyLevel === DifficultyLevel.HARD).length,
-      veryHard: posts.filter((p) => p.difficultyLevel === DifficultyLevel.VERY_HARD).length,
-      unranked: posts.filter((p) => p.difficultyLevel === DifficultyLevel.UNRANKED).length
-    };
-
-    const averageScore =
-      total > 0 ? posts.reduce((sum, p) => sum + p.difficultyScore, 0) / total : 0;
+    // Optional: distribution by difficultyLevel
+    const byLevel = await Post.aggregate([
+      { $match: { spaceId } },
+      { $group: { _id: '$difficultyLevel', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
 
     return {
       total,
       answered,
-      unanswered,
-      difficultyDistribution,
-      averageScore
+      unanswered: Math.max(0, total - answered),
+      avgDifficulty,
+      byLevel: byLevel.map((r: any) => ({ level: r._id, count: r.count })),
     };
   }
 }

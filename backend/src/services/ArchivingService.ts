@@ -7,21 +7,16 @@ import { VirtualSpace, SpaceStatus, Session, Post } from '../models';
 class ArchivingService {
   private job: schedule.Job | null = null;
 
-  /**
-   * Start automatic archiving scheduler
-   */
+  /** Start automatic archiving scheduler */
   public start(): void {
     // Run every 5 minutes
     this.job = schedule.scheduleJob('*/5 * * * *', async () => {
       await this.archiveExpiredSpaces();
     });
-
     console.log('✓ Archiving service started (runs every 5 minutes)');
   }
 
-  /**
-   * Stop the scheduler
-   */
+  /** Stop the scheduler */
   public stop(): void {
     if (this.job) {
       this.job.cancel();
@@ -30,23 +25,21 @@ class ArchivingService {
     }
   }
 
-  /**
-   * Archive all expired spaces
-   */
+  /** Archive all expired spaces */
   public async archiveExpiredSpaces(): Promise<number> {
     try {
       const now = new Date();
 
-      // Find all active spaces that have expired
-      const expiredSpaces = await VirtualSpace.find({
+      // Get ONLY the _id values of expired active spaces to avoid typing issues
+      const expiredIds = await VirtualSpace.distinct('_id', {
         status: SpaceStatus.ACTIVE,
-        endTime: { $lte: now }
+        endTime: { $lte: now },
       });
 
       let archivedCount = 0;
 
-      for (const space of expiredSpaces) {
-        await this.archiveSpace(space._id.toString());
+      for (const id of expiredIds) {
+        await this.archiveSpace(String(id));
         archivedCount++;
       }
 
@@ -61,9 +54,7 @@ class ArchivingService {
     }
   }
 
-  /**
-   * Archive a specific space
-   */
+  /** Archive a specific space */
   public async archiveSpace(spaceId: string): Promise<void> {
     try {
       // Get the space
@@ -88,7 +79,7 @@ class ArchivingService {
         session = new Session({
           spaceId,
           startTime: space.startTime,
-          endTime: space.endTime
+          endTime: space.endTime,
         });
       }
 
@@ -104,7 +95,7 @@ class ArchivingService {
           tutor: space.tutorId,
           participants: space.participants,
           startTime: space.startTime,
-          endTime: space.endTime
+          endTime: space.endTime,
         },
         posts: posts.map((post) => ({
           question: post.question,
@@ -117,9 +108,9 @@ class ArchivingService {
           tutorResponse: post.tutorResponse,
           answeredBy: post.answeredBy,
           answeredAt: post.answeredAt,
-          createdAt: post.createdAt
+          createdAt: post.createdAt,
         })),
-        statistics: session.statistics
+        statistics: session.statistics,
       };
 
       // Archive the session
@@ -137,32 +128,26 @@ class ArchivingService {
     }
   }
 
-  /**
-   * Get archived spaces
-   */
+  /** Get archived spaces */
   public async getArchivedSpaces(tutorId?: string) {
     const query: any = { isArchived: true };
 
     const sessions = await Session.find(query)
       .populate({
         path: 'spaceId',
-        populate: { path: 'tutorId', select: '-password' }
+        populate: { path: 'tutorId', select: '-password' },
       })
       .sort({ archivedAt: -1 });
 
-    // Filter by tutor if specified
     if (tutorId) {
       return sessions.filter((session: any) => {
         return session.spaceId?.tutorId?._id.toString() === tutorId;
       });
     }
-
     return sessions;
   }
 
-  /**
-   * Get archived space details
-   */
+  /** Get archived space details */
   public async getArchivedSpaceDetails(sessionId: string) {
     const session = await Session.findById(sessionId).populate('spaceId');
 
@@ -170,21 +155,13 @@ class ArchivingService {
       throw new Error('Archived session not found');
     }
 
-    return {
-      session,
-      data: session.archivedData
-    };
+    return { session, data: session.archivedData };
   }
 
-  /**
-   * Manually trigger archiving for a specific space
-   */
+  /** Manually trigger archiving for a specific space */
   public async manualArchive(spaceId: string, userId: string): Promise<void> {
     const space = await VirtualSpace.findById(spaceId);
-
-    if (!space) {
-      throw new Error('Space not found');
-    }
+    if (!space) throw new Error('Space not found');
 
     // Verify user is the tutor or admin
     if (space.tutorId.toString() !== userId) {
