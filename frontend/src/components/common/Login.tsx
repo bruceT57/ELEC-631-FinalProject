@@ -10,7 +10,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,19 +19,36 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      await login({ email, password });
+      const authenticatedUser = await login({ email, password });
+      console.log('Login successful:', authenticatedUser);
+      setLoading(false);
 
-      // Redirect based on role
-      if (user?.role === UserRole.STUDENT) {
+      // Check if there's a space code to redirect to
+      const redirectSpaceCode = sessionStorage.getItem('redirectSpaceCode');
+      if (redirectSpaceCode) {
+        sessionStorage.removeItem('redirectSpaceCode');
+        navigate(`/join/${redirectSpaceCode}`);
+        return;
+      }
+
+      // Redirect based on role from authenticated user
+      console.log('User role:', authenticatedUser?.role);
+      if (authenticatedUser?.role === UserRole.STUDENT) {
+        console.log('Redirecting to student dashboard');
         navigate('/student/dashboard');
-      } else if (user?.role === UserRole.TUTOR) {
+      } else if (authenticatedUser?.role === UserRole.TUTOR) {
+        console.log('Redirecting to tutor dashboard');
         navigate('/tutor/dashboard');
-      } else if (user?.role === UserRole.ADMIN) {
+      } else if (authenticatedUser?.role === UserRole.ADMIN) {
+        console.log('Redirecting to admin dashboard');
         navigate('/admin/dashboard');
+      } else {
+        console.log('Unknown role, redirecting to home');
+        navigate('/');
       }
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.response?.data?.error || 'Login failed');
-    } finally {
       setLoading(false);
     }
   };
