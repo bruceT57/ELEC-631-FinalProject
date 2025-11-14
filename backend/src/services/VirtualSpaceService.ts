@@ -192,6 +192,24 @@ class VirtualSpaceService {
     await VirtualSpace.findByIdAndDelete(spaceId);
     await Session.deleteMany({ spaceId });
   }
+
+  /**
+   * Regenerate QR codes for all spaces (use this when IP address changes)
+   */
+  public async regenerateAllQRCodes(): Promise<number> {
+    const spaces = await VirtualSpace.find({});
+    let updatedCount = 0;
+
+    for (const space of spaces) {
+      const newQRCode = await this.generateQRCode(space.spaceCode);
+      space.qrCode = newQRCode;
+      await space.save();
+      updatedCount++;
+    }
+
+    console.log(`✓ Regenerated QR codes for ${updatedCount} spaces with new URL: ${config.frontendUrl}`);
+    return updatedCount;
+  }
 }
 
 export default new VirtualSpaceService();

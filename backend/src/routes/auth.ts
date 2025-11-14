@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser, UserRole } from '../models/User';
 import config from '../config/config';
+import AuthMiddleware, { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -45,12 +46,13 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
   try {
     const body = (req.body && (req.body.user ?? req.body)) || {};
 
-    const { firstName, lastName, username, email, password } = body as {
+    const { firstName, lastName, username, email, password, role } = body as {
       firstName?: string;
       lastName?: string;
       username?: string;
       email?: string;
       password?: string;
+      role?: string;
     };
 
     const missing = {
@@ -70,27 +72,51 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
       username,
       email,
       password, // hashed via pre-save hook
+      role: role || UserRole.STUDENT,
     });
 
+    const token = signToken(user);
+
     return res.status(201).json({
-      id: docId(user),
-      email: user.email,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      token,
+      user: {
+        id: docId(user),
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      message: 'Registration successful',
     });
   } catch (err: any) {
+    console.error('Registration error:', err);
+    
     if (err?.name === 'ValidationError') {
       const details: Record<string, string> = {};
       for (const [k, v] of Object.entries(err.errors || {})) {
-        details[k] = (v as any).message || 'Invalid';
+        details[k] = (v as any).message || 'Invalid field';
       }
-      return res.status(400).json({ error: 'User validation failed', details });
+      return res.status(400).json({ 
+        error: 'User validation failed',
+        details,
+        fullError: err.message
+      });
     }
     if (err?.code === 11000) {
-      return res.status(400).json({ error: 'Duplicate field value', details: err.keyValue || {} });
+      const field = Object.keys(err.keyValue || {})[0] || 'unknown';
+      const value = err.keyValue?.[field] || 'unknown';
+      return res.status(400).json({ 
+        error: `${field} already exists`,
+        details: { [field]: `"${value}" is already registered` } 
+      });
     }
-    return next(err);
+    
+    // Generic error handler
+    return res.status(500).json({
+      error: 'Registration failed',
+      message: err.message || 'Unknown error occurred'
+    });
   }
 });
 
@@ -149,5 +175,30 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     return next(err);
   }
 });
+
+/**
+ * DELETE /api/auth/all-users
+ * Delete all users from the database (ADMIN ONLY)
+ * Requires: Admin authentication
+ * ⚠️ WARNING: This is destructive and should only be used in development
+ */
+router.delete(
+  '/all-users',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const result = await User.deleteMany({});
+      return res.status(200).json({
+        message: 'All users deleted successfully',
+        deletedCount: result.deletedCount,
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        error: err.message || 'Failed to delete users'
+      });
+    }
+  }
+);
 
 export default router;

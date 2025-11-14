@@ -9,8 +9,8 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<User>;
+  register: (data: RegisterData) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -48,6 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      return user;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -64,6 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      return user;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;

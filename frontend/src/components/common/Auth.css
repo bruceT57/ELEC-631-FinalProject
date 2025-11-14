@@ -77,12 +77,23 @@
 }
 
 .error-message {
-  background: #fee;
+  background: #ffebee;
   color: #c33;
-  padding: 10px;
+  padding: 12px 15px;
   border-radius: 5px;
   margin-bottom: 20px;
   text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 4px solid #c33;
+}
+
+.field-error {
+  display: block;
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+  margin-bottom: 10px;
 }
 
 .auth-link {

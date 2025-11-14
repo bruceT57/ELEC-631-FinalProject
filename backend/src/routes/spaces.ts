@@ -69,4 +69,26 @@ router.delete(
   VirtualSpaceController.deleteSpace
 );
 
+// POST /api/spaces/admin/regenerate-qr-codes - Regenerate all QR codes (Admin only)
+// Use this when the server IP address changes
+router.post(
+  '/admin/regenerate-qr-codes',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.ADMIN),
+  async (req, res, next) => {
+    try {
+      const VirtualSpaceService = (await import('../services/VirtualSpaceService')).default;
+      const count = await VirtualSpaceService.regenerateAllQRCodes();
+      return res.status(200).json({
+        message: 'QR codes regenerated successfully',
+        updatedCount: count
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        error: err.message || 'Failed to regenerate QR codes'
+      });
+    }
+  }
+);
+
 export default router;

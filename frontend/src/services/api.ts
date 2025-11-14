@@ -41,9 +41,16 @@ class ApiService {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+          // Don't redirect if this is a login/register request (let the component handle it)
+          const url = error.config?.url;
+          const isAuthEndpoint = url?.includes('/auth/login') || url?.includes('/auth/register');
+          
+          if (!isAuthEndpoint) {
+            // For other 401 errors, redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }

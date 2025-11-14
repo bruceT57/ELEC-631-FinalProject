@@ -13,6 +13,8 @@ const TutorDashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [knowledgeSummary, setKnowledgeSummary] = useState('');
   const [statistics, setStatistics] = useState<any>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -44,16 +46,42 @@ const TutorDashboard: React.FC = () => {
   const loadSpaceDetails = async () => {
     if (!selectedSpace) return;
 
+    setDetailsLoading(true);
+    setDetailsError('');
+    setKnowledgeSummary('');
+    setStatistics(null);
+
     try {
       const [summaryData, statsData] = await Promise.all([
         apiService.getKnowledgeSummary(selectedSpace._id),
         apiService.getPostStatistics(selectedSpace._id)
       ]);
 
-      setKnowledgeSummary(summaryData.summary);
-      setStatistics(statsData.statistics);
-    } catch (err) {
+      // Handle knowledge summary - could be array or string
+      if (Array.isArray(summaryData.summary)) {
+        const summaryText = summaryData.summary
+          .map((item: any) => `${item.point}: ${item.count} occurrences`)
+          .join('\n');
+        setKnowledgeSummary(summaryText);
+      } else {
+        setKnowledgeSummary(summaryData.summary || '');
+      }
+
+      // Handle statistics
+      if (statsData.statistics) {
+        const stats = statsData.statistics;
+        setStatistics({
+          total: stats.total || 0,
+          answered: stats.answered || 0,
+          unanswered: stats.unanswered || 0,
+          averageScore: stats.avgDifficulty || stats.averageScore || 0
+        });
+      }
+    } catch (err: any) {
       console.error('Failed to load space details:', err);
+      setDetailsError(err.response?.data?.error || 'Failed to load space details');
+    } finally {
+      setDetailsLoading(false);
     }
   };
 
@@ -206,6 +234,10 @@ const TutorDashboard: React.FC = () => {
                   <p className="space-code-display">Code: {selectedSpace.spaceCode}</p>
                 </div>
               </div>
+
+              {detailsError && <div className="error-message">{detailsError}</div>}
+
+              {detailsLoading && <div className="loading">Loading space details...</div>}
 
               {statistics && (
                 <div className="statistics-panel">
