@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UserRole } from './types';
 import Login from './components/common/Login';
 import Register from './components/common/Register';
+import JoinSpace from './components/common/JoinSpace';
 import StudentDashboard from './components/student/StudentDashboard';
 import TutorDashboard from './components/tutor/TutorDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -60,6 +61,7 @@ const AppRoutes: React.FC = () => {
 
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/join/:spaceCode" element={<JoinSpace />} />
 
       <Route
         path="/student/dashboard"

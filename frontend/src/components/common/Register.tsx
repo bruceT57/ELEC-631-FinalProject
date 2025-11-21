@@ -15,6 +15,7 @@ const Register: React.FC = () => {
     role: UserRole.STUDENT
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const { register } = useAuth();
@@ -25,11 +26,14 @@ const Register: React.FC = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Clear field error when user starts typing
+    setFieldErrors({ ...fieldErrors, [e.target.name]: '' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -40,17 +44,33 @@ const Register: React.FC = () => {
 
     try {
       const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      const registeredUser = await register(registerData);
+      setLoading(false);
 
-      // Redirect based on role
-      if (formData.role === UserRole.STUDENT) {
+      // Check if there's a space code to redirect to
+      const redirectSpaceCode = sessionStorage.getItem('redirectSpaceCode');
+      if (redirectSpaceCode) {
+        sessionStorage.removeItem('redirectSpaceCode');
+        navigate(`/join/${redirectSpaceCode}`);
+        return;
+      }
+
+      // Redirect based on role from registered user
+      if (registeredUser?.role === UserRole.STUDENT) {
         navigate('/student/dashboard');
-      } else if (formData.role === UserRole.TUTOR) {
+      } else if (registeredUser?.role === UserRole.TUTOR) {
         navigate('/tutor/dashboard');
+      } else if (registeredUser?.role === UserRole.ADMIN) {
+        navigate('/admin/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
-    } finally {
+      const errorData = err.response?.data;
+      if (errorData?.details) {
+        setFieldErrors(errorData.details);
+        setError(errorData.error || 'Registration failed');
+      } else {
+        setError(errorData?.error || err.message || 'Registration failed');
+      }
       setLoading(false);
     }
   };
@@ -75,6 +95,7 @@ const Register: React.FC = () => {
                 required
                 disabled={loading}
               />
+              {fieldErrors.firstName && <span className="field-error">{fieldErrors.firstName}</span>}
             </div>
 
             <div className="form-group">
@@ -88,6 +109,7 @@ const Register: React.FC = () => {
                 required
                 disabled={loading}
               />
+              {fieldErrors.lastName && <span className="field-error">{fieldErrors.lastName}</span>}
             </div>
           </div>
 
@@ -102,6 +124,7 @@ const Register: React.FC = () => {
               required
               disabled={loading}
             />
+            {fieldErrors.username && <span className="field-error">{fieldErrors.username}</span>}
           </div>
 
           <div className="form-group">
@@ -115,6 +138,7 @@ const Register: React.FC = () => {
               required
               disabled={loading}
             />
+            {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
           </div>
 
           <div className="form-group">
@@ -144,6 +168,7 @@ const Register: React.FC = () => {
                 minLength={6}
                 disabled={loading}
               />
+              {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
             </div>
 
             <div className="form-group">
@@ -158,6 +183,7 @@ const Register: React.FC = () => {
                 minLength={6}
                 disabled={loading}
               />
+              {fieldErrors.confirmPassword && <span className="field-error">{fieldErrors.confirmPassword}</span>}
             </div>
           </div>
 
