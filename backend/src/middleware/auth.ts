@@ -21,7 +21,8 @@ export interface AuthRequest extends Request {
 
 /** Claims embedded in JWTs (adjust keys to match your token issuer) */
 interface JwtClaims {
-  sub: string;                 // user id
+  sub?: string;                 // user id
+  userId?: string;             // fallback
   email: string;
   username: string;
   role?: UserRole | string;
@@ -53,7 +54,12 @@ function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
 
     const decoded = jwt.verify(token, secret) as JwtClaims;
 
-    const uid = decoded.sub;
+    const uid = decoded.sub || decoded.userId;
+    
+    if (!uid) {
+       return res.status(401).json({ error: "Invalid token: missing user ID" });
+    }
+
     req.user = {
       id: uid,               // canonical
       userId: uid,           // alias used by controllers

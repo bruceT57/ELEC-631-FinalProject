@@ -12,7 +12,8 @@ const Register: React.FC = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: UserRole.STUDENT
+    role: UserRole.STUDENT,
+    tutorCode: ''
   });
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -154,6 +155,23 @@ const Register: React.FC = () => {
               <option value={UserRole.TUTOR}>Tutor</option>
             </select>
           </div>
+
+          {formData.role === UserRole.TUTOR && (
+            <div className="form-group">
+              <label htmlFor="tutorCode">Tutor Registration Code</label>
+              <input
+                type="text"
+                id="tutorCode"
+                name="tutorCode"
+                value={formData.tutorCode}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                placeholder="Enter code provided by admin"
+              />
+              {fieldErrors.tutorCode && <span className="field-error">{fieldErrors.tutorCode}</span>}
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">

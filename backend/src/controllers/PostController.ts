@@ -259,6 +259,87 @@ class PostController {
       });
     }
   }
+
+  /**
+   * Add a reply to a post
+   */
+  public async addReply(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { postId } = req.params;
+      const { content } = req.body;
+
+      if (!content) {
+        res.status(400).json({ error: 'Content is required' });
+        return;
+      }
+
+      const post = await PostService.addReply(postId, req.user.userId, content);
+
+      res.status(200).json({
+        message: 'Reply added successfully',
+        post
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        error: error.message || 'Failed to add reply'
+      });
+    }
+  }
+
+  /**
+   * Toggle like on a post
+   */
+  public async toggleLike(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { postId } = req.params;
+
+      const post = await PostService.toggleLike(postId, req.user.userId);
+
+      res.status(200).json({
+        message: 'Like toggled successfully',
+        post
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        error: error.message || 'Failed to toggle like'
+      });
+    }
+  }
+
+  /**
+   * Toggle like on a reply
+   */
+  public async toggleReplyLike(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { postId, replyId } = req.params;
+
+      const post = await PostService.toggleReplyLike(postId, replyId, req.user.userId);
+
+      res.status(200).json({
+        message: 'Reply like toggled successfully',
+        post
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        error: error.message || 'Failed to toggle reply like'
+      });
+    }
+  }
 }
 
 export default new PostController();

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import QRCode from 'qrcode';
 import { VirtualSpace, IVirtualSpace, SpaceStatus, Session } from '../models';
 import { randomBytes } from 'crypto';
@@ -9,6 +10,7 @@ import config from '../config/config';
 export interface IVirtualSpaceData {
   tutorId: string;
   name: string;
+  courseName: string;
   description?: string;
   startTime: Date;
   endTime: Date;
@@ -66,6 +68,7 @@ class VirtualSpaceService {
     // Create virtual space
     const space = new VirtualSpace({
       ...data,
+      tutorId: new mongoose.Types.ObjectId(data.tutorId),
       spaceCode,
       qrCode,
       status: SpaceStatus.ACTIVE,

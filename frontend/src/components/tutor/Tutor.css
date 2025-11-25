@@ -154,3 +154,70 @@
     order: -1;
   }
 }
+
+/* Tree View Styles */
+.session-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.course-group {
+  margin-bottom: 5px;
+}
+
+.course-header,
+.week-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.course-header:hover,
+.week-header:hover {
+  background-color: #e9ecef;
+}
+
+.course-header {
+  font-weight: 600;
+  color: #2c3e50;
+  background-color: #f1f3f5;
+}
+
+.week-header {
+  font-weight: 500;
+  color: #495057;
+  margin-left: 10px;
+}
+
+.toggle-icon {
+  margin-right: 8px;
+  font-size: 10px;
+  width: 12px;
+  display: inline-block;
+  text-align: center;
+}
+
+.course-weeks {
+  margin-top: 5px;
+}
+
+.week-sessions {
+  margin-left: 25px;
+  margin-top: 5px;
+}
+
+/* Adjust existing space-card for tree view */
+.week-sessions .space-card {
+  margin-bottom: 8px;
+  padding: 10px;
+  border-left: 3px solid #ced4da;
+}
+
+.week-sessions .space-card.active {
+  border-left-color: #667eea;
+}

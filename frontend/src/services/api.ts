@@ -6,7 +6,8 @@ import {
   ArchivedSession,
   LoginCredentials,
   RegisterData,
-  AuthResponse
+  AuthResponse,
+  ProfileStats
 } from '../types';
 
 /**
@@ -84,11 +85,52 @@ class ApiService {
     await this.api.post('/auth/change-password', { oldPassword, newPassword });
   }
 
+  async getProfileStats(): Promise<{ stats: ProfileStats }> {
+    const response = await this.api.get('/auth/stats');
+    return response.data;
+  }
+
+  /**
+   * Admin APIs
+   */
+  async generateTutorCode(count: number = 1): Promise<{ codes: any[] }> {
+    const response = await this.api.post('/admin/tutor-codes', { count });
+    return response.data;
+  }
+
+  async getTutorCodes(): Promise<{ codes: any[] }> {
+    const response = await this.api.get('/admin/tutor-codes');
+    return response.data;
+  }
+
+  async deleteTutorCode(codeId: string): Promise<void> {
+    await this.api.delete(`/admin/tutor-codes/${codeId}`);
+  }
+
+  async bulkDeleteTutorCodes(codeIds: string[]): Promise<void> {
+    await this.api.post('/admin/tutor-codes/bulk-delete', { codeIds });
+  }
+
+  async getTutors(): Promise<{ tutors: User[] }> {
+    const response = await this.api.get('/admin/tutors');
+    return response.data;
+  }
+
+  async toggleUserStatus(userId: string, isActive: boolean): Promise<{ user: User }> {
+    const response = await this.api.patch(`/admin/users/${userId}/status`, { isActive });
+    return response.data;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.api.delete(`/admin/users/${userId}`);
+  }
+
   /**
    * Virtual Space APIs
    */
   async createSpace(data: {
     name: string;
+    courseName: string;
     description?: string;
     startTime: string;
     endTime: string;
@@ -172,6 +214,21 @@ class ApiService {
     return response.data;
   }
 
+  async addReply(postId: string, content: string): Promise<{ post: Post }> {
+    const response = await this.api.post(`/posts/${postId}/replies`, { content });
+    return response.data;
+  }
+
+  async toggleLike(postId: string): Promise<{ post: Post }> {
+    const response = await this.api.post(`/posts/${postId}/like`);
+    return response.data;
+  }
+
+  async toggleReplyLike(postId: string, replyId: string): Promise<{ post: Post }> {
+    const response = await this.api.post(`/posts/${postId}/replies/${replyId}/like`);
+    return response.data;
+  }
+
   /**
    * Archive APIs
    */
@@ -187,6 +244,10 @@ class ApiService {
 
   async manualArchive(spaceId: string): Promise<void> {
     await this.api.post(`/archives/manual/${spaceId}`);
+  }
+
+  async deleteArchivedSession(sessionId: string): Promise<void> {
+    await this.api.delete(`/archives/${sessionId}`);
   }
 }
 

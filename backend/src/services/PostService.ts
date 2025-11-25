@@ -1,5 +1,5 @@
 import { SortOrder } from 'mongoose';
-import { Post } from '../models';
+import { Post, VirtualSpace, SpaceStatus } from '../models';
 import AIRankingService from './AIRankingService';
 
 export interface IPostMedia {
@@ -23,6 +23,15 @@ export interface IPostData {
 class PostService {
   /** Create a post and kick off background AI analysis */
   public async createPost(data: IPostData) {
+    // Check if space is active
+    const space = await VirtualSpace.findById(data.spaceId);
+    if (!space) {
+      throw new Error('Virtual space not found');
+    }
+    if (space.status !== SpaceStatus.ACTIVE) {
+      throw new Error('This space is no longer active');
+    }
+
     const post = await Post.create({
       spaceId: data.spaceId,
       studentId: data.studentId,
@@ -75,6 +84,7 @@ class PostService {
     return Post.find({ spaceId })
       .populate('studentId', '-password')
       .populate('answeredBy', '-password')
+      .populate('replies.author', '-password')
       .sort(sortOption);
   }
 
@@ -83,6 +93,7 @@ class PostService {
     return Post.find({ studentId })
       .populate('studentId', '-password')
       .populate('answeredBy', '-password')
+      .populate('replies.author', '-password')
       .sort({ createdAt: -1 as SortOrder });
   }
 
@@ -90,7 +101,8 @@ class PostService {
   public async getPostById(postId: string) {
     return Post.findById(postId)
       .populate('studentId', '-password')
-      .populate('answeredBy', '-password');
+      .populate('answeredBy', '-password')
+      .populate('replies.author', '-password');
   }
 
   /** Tutor answers a post */
@@ -194,6 +206,70 @@ class PostService {
       avgDifficulty,
       byLevel: byLevel.map((r: any) => ({ level: r._id, count: r.count })),
     };
+  }
+
+  /** Add a reply to a post */
+  public async addReply(postId: string, userId: string, content: string) {
+    const post = await Post.findById(postId);
+    if (!post) throw new Error('Post not found');
+
+    post.replies.push({
+      author: userId as any,
+      content,
+      createdAt: new Date(),
+      likes: []
+    });
+
+    // Check if author is the tutor and mark as answered
+    const space = await VirtualSpace.findById(post.spaceId);
+    if (space && space.tutorId.toString() === userId) {
+      post.isAnswered = true;
+      post.answeredBy = userId as any;
+      post.answeredAt = new Date();
+    }
+
+    await post.save();
+    // Return populated post
+    return this.getPostById(postId);
+  }
+
+  /** Toggle like on a post */
+  public async toggleLike(postId: string, userId: string) {
+    const post = await Post.findById(postId);
+    if (!post) throw new Error('Post not found');
+
+    const userIdObj = userId as any;
+    const index = post.likes.indexOf(userIdObj);
+
+    if (index === -1) {
+      post.likes.push(userIdObj);
+    } else {
+      post.likes.splice(index, 1);
+    }
+
+    await post.save();
+    return post;
+  }
+
+  /** Toggle like on a reply */
+  public async toggleReplyLike(postId: string, replyId: string, userId: string) {
+    const post = await Post.findById(postId);
+    if (!post) throw new Error('Post not found');
+
+    const reply = post.replies.find(r => r._id?.toString() === replyId);
+    if (!reply) throw new Error('Reply not found');
+
+    const userIdObj = userId as any;
+    const index = reply.likes.indexOf(userIdObj);
+
+    if (index === -1) {
+      reply.likes.push(userIdObj);
+    } else {
+      reply.likes.splice(index, 1);
+    }
+
+    await post.save();
+    return post;
   }
 }
 

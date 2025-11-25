@@ -17,12 +17,23 @@ const TutorDashboard: React.FC = () => {
   const [detailsError, setDetailsError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
+    courseName: '',
     description: '',
     startTime: '',
     endTime: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Grouping state
+  type GroupedSpaces = {
+    [course: string]: {
+      [week: string]: VirtualSpace[];
+    };
+  };
+  const [groupedSpaces, setGroupedSpaces] = useState<GroupedSpaces>({});
+  const [expandedCourses, setExpandedCourses] = useState<{ [key: string]: boolean }>({});
+  const [expandedWeeks, setExpandedWeeks] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     loadSpaces();
@@ -38,10 +49,44 @@ const TutorDashboard: React.FC = () => {
     try {
       const { spaces } = await apiService.getTutorSpaces();
       setSpaces(spaces);
+      groupSpaces(spaces);
     } catch (err) {
       console.error('Failed to load spaces:', err);
     }
   };
+
+  const groupSpaces = (spaces: VirtualSpace[]) => {
+    const grouped: GroupedSpaces = {};
+
+    spaces.forEach(space => {
+      const courseName = space.courseName || 'Other';
+      
+      // Calculate week (start of week based on startTime)
+      const date = new Date(space.startTime);
+      const startOfWeek = new Date(date);
+      startOfWeek.setDate(date.getDate() - date.getDay()); // Sunday as start
+      const weekKey = `Week of ${startOfWeek.toLocaleDateString()}`;
+
+      if (!grouped[courseName]) {
+        grouped[courseName] = {};
+      }
+      if (!grouped[courseName][weekKey]) {
+        grouped[courseName][weekKey] = [];
+      }
+      grouped[courseName][weekKey].push(space);
+    });
+
+    setGroupedSpaces(grouped);
+  };
+
+  const toggleCourse = (course: string) => {
+    setExpandedCourses(prev => ({ ...prev, [course]: !prev[course] }));
+  };
+
+  const toggleWeek = (weekKey: string) => {
+    setExpandedWeeks(prev => ({ ...prev, [weekKey]: !prev[weekKey] }));
+  };
+
 
   const loadSpaceDetails = async () => {
     if (!selectedSpace) return;
@@ -93,7 +138,7 @@ const TutorDashboard: React.FC = () => {
     try {
       await apiService.createSpace(formData);
       setShowCreateForm(false);
-      setFormData({ name: '', description: '', startTime: '', endTime: '' });
+      setFormData({ name: '', courseName: '', description: '', startTime: '', endTime: '' });
       await loadSpaces();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create space');
@@ -144,7 +189,24 @@ const TutorDashboard: React.FC = () => {
                     onChange={handleChange}
                     required
                     disabled={loading}
+                    placeholder="e.g. Week 1 Discussion"
                   />
+                </div>
+
+                <div className="form-group">
+                  <label>Course Code</label>
+                  <input
+                    type="text"
+                    name="courseName"
+                    value={formData.courseName}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    placeholder="e.g. MATH 101"
+                    pattern="^[A-Z]+ \d+$"
+                    title="Format: ALL CAPS COURSE + SPACE + NUMBER (e.g. MATH 101)"
+                  />
+                  <small className="form-hint">Format: MATH 101 (All Caps + Space + Number)</small>
                 </div>
 
                 <div className="form-group">
@@ -190,24 +252,67 @@ const TutorDashboard: React.FC = () => {
           </div>
 
           <div className="spaces-list">
-            <h3>My Spaces</h3>
+            <div className="sidebar-header">
+              <h3>My Spaces</h3>
+              <button 
+                className="refresh-btn" 
+                onClick={loadSpaces} 
+                title="Refresh List"
+              >
+                ↻
+              </button>
+            </div>
             {spaces.length === 0 ? (
               <p className="empty-state">No spaces created yet</p>
             ) : (
-              spaces.map((space) => (
-                <div
-                  key={space._id}
-                  className={`space-card ${selectedSpace?._id === space._id ? 'active' : ''}`}
-                  onClick={() => setSelectedSpace(space)}
-                >
-                  <h4>{space.name}</h4>
-                  <p className="space-code">Code: {space.spaceCode}</p>
-                  <p className="participant-count">
-                    Participants: {space.participants.length}
-                  </p>
-                  <span className={`status-badge ${space.status}`}>{space.status}</span>
-                </div>
-              ))
+              <div className="session-tree">
+                {Object.entries(groupedSpaces).map(([course, weeks]) => (
+                  <div key={course} className="course-group">
+                    <div 
+                      className="course-header" 
+                      onClick={() => toggleCourse(course)}
+                    >
+                      <span className="toggle-icon">{expandedCourses[course] ? '▼' : '▶'}</span>
+                      <span className="course-name">{course}</span>
+                    </div>
+                    
+                    {expandedCourses[course] && (
+                      <div className="course-weeks">
+                        {Object.entries(weeks).map(([week, spaces]) => (
+                          <div key={week} className="week-group">
+                            <div 
+                              className="week-header"
+                              onClick={() => toggleWeek(`${course}-${week}`)}
+                            >
+                              <span className="toggle-icon">{expandedWeeks[`${course}-${week}`] ? '▼' : '▶'}</span>
+                              <span className="week-name">{week}</span>
+                            </div>
+
+                            {expandedWeeks[`${course}-${week}`] && (
+                              <div className="week-sessions">
+                                {spaces.map(space => (
+                                  <div
+                                    key={space._id}
+                                    className={`space-card ${selectedSpace?._id === space._id ? 'active' : ''}`}
+                                    onClick={() => setSelectedSpace(space)}
+                                  >
+                                    <h4>{space.name}</h4>
+                                    <p className="space-code">Code: {space.spaceCode}</p>
+                                    <p className="participant-count">
+                                      Participants: {space.participants.length}
+                                    </p>
+                                    <span className={`status-badge ${space.status}`}>{space.status}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </aside>
@@ -217,7 +322,16 @@ const TutorDashboard: React.FC = () => {
             <>
               <div className="space-header">
                 <div>
-                  <h2>{selectedSpace.name}</h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2>{selectedSpace.name}</h2>
+                    <button 
+                      className="refresh-btn" 
+                      onClick={loadSpaceDetails} 
+                      title="Refresh Details"
+                    >
+                      ↻
+                    </button>
+                  </div>
                   <p>{selectedSpace.description}</p>
                   <p className="space-time">
                     {new Date(selectedSpace.startTime).toLocaleString()} -{' '}
@@ -275,7 +389,11 @@ const TutorDashboard: React.FC = () => {
                 </div>
               )}
 
-              <PostList spaceId={selectedSpace._id} isStudent={false} />
+              <PostList 
+                spaceId={selectedSpace._id} 
+                isStudent={false} 
+                spaceTutorId={(user as any)?._id || user?.id}
+              />
             </>
           ) : (
             <div className="empty-state-main">

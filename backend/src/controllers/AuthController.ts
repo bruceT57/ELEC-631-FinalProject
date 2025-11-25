@@ -9,21 +9,24 @@ class AuthController {
 
     // Normalize common frontend names
     const raw = req.body || {};
-    const name: string =
-      (raw.name ?? raw.fullName ?? raw.username ?? raw.displayName ?? '').toString().trim();
+    const firstName: string = (raw.firstName ?? '').toString().trim();
+    const lastName: string = (raw.lastName ?? '').toString().trim();
+    const username: string = (raw.username ?? '').toString().trim();
     const email: string = (raw.email ?? raw.userEmail ?? '').toString().trim().toLowerCase();
     const password: string = (raw.password ?? raw.pass ?? raw.pwd ?? '').toString();
+    const role: string = (raw.role ?? 'student').toString();
+    const tutorCode: string = (raw.tutorCode ?? '').toString().trim().toUpperCase();
 
-    console.log('[auth/register] normalized:', { name, email, passLen: password?.length ?? 0 });
+    console.log('[auth/register] normalized:', { firstName, lastName, username, email, passLen: password?.length ?? 0, role, tutorCode });
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !username || !email || !password) {
       return res.status(400).json({
         error: 'Missing required fields',
-        details: { name: !!name, email: !!email, password: !!password },
+        details: { firstName: !!firstName, lastName: !!lastName, username: !!username, email: !!email, password: !!password },
       });
     }
 
-    const { token, user } = await AuthService.register({ name, email, password });
+    const { token, user } = await AuthService.register({ firstName, lastName, username, email, password, role, tutorCode });
     return res.status(201).json({ token, user });
   } catch (err: any) {
     console.error('[auth/register] ERROR:', err?.message, err);
@@ -38,8 +41,16 @@ class AuthController {
 
   public async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body as { email: string; password: string };
-      const { token, user } = await AuthService.login(email, password);
+      const body = req.body || {};
+      // Support email or username login
+      const identifier = (body.email || body.username || '').toString().trim();
+      const password = (body.password || '').toString();
+
+      if (!identifier || !password) {
+        return res.status(400).json({ error: 'Missing credentials' });
+      }
+
+      const { token, user } = await AuthService.login(identifier, password);
       return res.status(200).json({ token, user });
     } catch (err: any) {
       return res.status(401).json({ error: err.message || 'Invalid credentials' });
@@ -76,6 +87,16 @@ class AuthController {
       return res.status(200).json({ success: true });
     } catch (err: any) {
       return res.status(400).json({ error: err.message || 'Failed to change password' });
+    }
+  }
+
+  public async getProfileStats(req: Request & { user?: { userId: string } }, res: Response) {
+    try {
+      if (!req.user?.userId) return res.status(401).json({ error: 'Unauthorized' });
+      const stats = await AuthService.getUserStats(req.user.userId);
+      return res.status(200).json({ stats });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to fetch stats' });
     }
   }
 }

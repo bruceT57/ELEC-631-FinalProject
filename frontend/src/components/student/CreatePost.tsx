@@ -23,21 +23,25 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+    
     setFiles(selectedFiles);
 
-    // If OCR mode and image selected, extract text
-    if (inputMode === InputType.OCR && selectedFiles.length > 0) {
-      const imageFile = selectedFiles[0];
-      setOcrProgress('Processing image...');
-
+    // Auto-OCR if it's an image and text box is empty
+    const imageFile = selectedFiles.find(f => f.type.startsWith('image/'));
+    if (imageFile && !question.trim()) {
+      setInputMode(InputType.OCR);
+      setOcrProgress('Extracting text from image...');
       try {
         const extractedText = await ocrService.extractTextFromImage(imageFile);
         setQuestion(extractedText);
         setOriginalText(extractedText);
-        setOcrProgress('Text extracted successfully!');
-      } catch (err) {
-        setError('Failed to extract text from image');
         setOcrProgress('');
+      } catch (err) {
+        console.error('OCR failed:', err);
+        setOcrProgress('');
+        // Fallback to text mode if OCR fails
+        setInputMode(InputType.TEXT);
       }
     }
   };
@@ -54,6 +58,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
       return;
     }
 
+    setInputMode(InputType.VOICE);
     setIsListening(true);
     voiceService.startListening(
       (text) => {
@@ -66,6 +71,10 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
         setIsListening(false);
       }
     );
+  };
+
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,101 +109,94 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
       setOriginalText('');
       setFiles([]);
       setOcrProgress('');
+      setInputMode(InputType.TEXT);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
       onPostCreated();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create post');
+      const errorMessage = err.response?.data?.error || 'Failed to create post';
+      setError(errorMessage);
+
+      // If the space is archived/expired, refresh the page to update UI
+      if (errorMessage === 'This space is no longer active') {
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="create-post">
+    <div className="create-post-container">
       <h3>Ask a Question</h3>
 
       {error && <div className="error-message">{error}</div>}
-      {ocrProgress && <div className="info-message">{ocrProgress}</div>}
+      
+      <form onSubmit={handleSubmit} className="create-post-form">
+        <div className="input-area">
+          <textarea
+            value={question}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              if (inputMode !== InputType.TEXT && !originalText) {
+                setInputMode(InputType.TEXT);
+              }
+            }}
+            placeholder={isListening ? "Listening..." : "Type your question here..."}
+            rows={4}
+            disabled={loading}
+            className={isListening ? 'listening-mode' : ''}
+            required
+          />
+          {ocrProgress && <div className="ocr-status">{ocrProgress}</div>}
+        </div>
 
-      <div className="input-mode-selector">
-        <button
-          className={`mode-btn ${inputMode === InputType.TEXT ? 'active' : ''}`}
-          onClick={() => setInputMode(InputType.TEXT)}
-        >
-          Text
-        </button>
-        <button
-          className={`mode-btn ${inputMode === InputType.OCR ? 'active' : ''}`}
-          onClick={() => setInputMode(InputType.OCR)}
-        >
-          Image (OCR)
-        </button>
-        <button
-          className={`mode-btn ${inputMode === InputType.VOICE ? 'active' : ''}`}
-          onClick={() => setInputMode(InputType.VOICE)}
-        >
-          Voice
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        {inputMode === InputType.OCR && (
-          <div className="file-input-section">
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleFileSelect}
-              disabled={loading}
-            />
-          </div>
-        )}
-
-        {inputMode === InputType.VOICE && (
-          <div className="voice-input-section">
+        <div className="action-bar">
+          <div className="left-actions">
             <button
               type="button"
               onClick={handleVoiceInput}
-              className={`btn-voice ${isListening ? 'listening' : ''}`}
+              className={`action-btn voice-btn ${isListening ? 'active' : ''}`}
               disabled={loading}
+              title="Record Voice"
             >
-              {isListening ? 'Stop Recording' : 'Start Recording'}
+              {isListening ? '⏹ Stop' : '🎤 Voice'}
             </button>
-            {isListening && <p className="listening-indicator">Listening...</p>}
-          </div>
-        )}
 
-        <div className="form-group">
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Your question here..."
-            rows={5}
-            disabled={loading}
-            required
-          />
-        </div>
-
-        {inputMode === InputType.TEXT && (
-          <div className="file-input-section">
-            <label>Attach images (optional):</label>
+            <button
+              type="button"
+              onClick={triggerFileSelect}
+              className="action-btn file-btn"
+              disabled={loading}
+              title="Attach File"
+            >
+              📎 Attach
+            </button>
+            
             <input
               type="file"
               ref={fileInputRef}
               accept="image/*,application/pdf"
               multiple
               onChange={handleFileSelect}
-              disabled={loading}
+              style={{ display: 'none' }}
             />
+            
+            {files.length > 0 && (
+              <span className="file-count">
+                {files.length} file(s) selected
+              </span>
+            )}
           </div>
-        )}
 
-        <button type="submit" disabled={loading} className="btn-primary">
-          {loading ? 'Posting...' : 'Post Question'}
-        </button>
+          <button type="submit" disabled={loading} className="submit-btn">
+            {loading ? 'Posting...' : 'Post Question'}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -99,6 +99,36 @@ class ArchivingController {
       });
     }
   }
+
+  /**
+   * Delete an archived session
+   */
+  public async deleteArchivedSession(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      // Only admins can delete archived sessions
+      if (req.user.role !== 'admin') {
+        res.status(403).json({ error: 'Forbidden: Only admins can delete archives' });
+        return;
+      }
+
+      const { sessionId } = req.params;
+
+      await ArchivingService.deleteArchivedSession(sessionId);
+
+      res.status(200).json({
+        message: 'Archived session deleted successfully'
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: error.message || 'Failed to delete archived session'
+      });
+    }
+  }
 }
 
 export default new ArchivingController();

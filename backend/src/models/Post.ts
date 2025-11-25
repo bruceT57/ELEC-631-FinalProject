@@ -38,6 +38,14 @@ export interface IKnowledgePoint {
   concept: string;
 }
 
+export interface IReply {
+  _id?: mongoose.Types.ObjectId;
+  author: mongoose.Types.ObjectId;
+  content: string;
+  createdAt: Date;
+  likes: mongoose.Types.ObjectId[];
+}
+
 /**
  * Post interface extending Mongoose Document
  */
@@ -55,6 +63,8 @@ export interface IPost extends Document {
   isAnswered: boolean;
   answeredAt?: Date;
   answeredBy?: mongoose.Types.ObjectId;
+  likes: mongoose.Types.ObjectId[];
+  replies: IReply[];
   createdAt: Date;
   updatedAt: Date;
   markAsAnswered(tutorId: mongoose.Types.ObjectId, response: string): void;
@@ -133,7 +143,16 @@ const PostSchema: Schema = new Schema(
     answeredBy: {
       type: Schema.Types.ObjectId,
       ref: 'User'
-    }
+    },
+    likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    replies: [
+      {
+        author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        content: { type: String, required: true, trim: true },
+        createdAt: { type: Date, default: Date.now },
+        likes: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+      }
+    ]
   },
   {
     timestamps: true
