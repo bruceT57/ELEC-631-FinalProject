@@ -1,0 +1,25 @@
+# Production Environment Configuration for Namecheap Stellar
+# Copy this file to .env and fill in your actual values
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# MongoDB Configuration (Local for testing)
+MONGODB_URI=mongodb://localhost:27017/tutoring-tool
+
+# JWT Configuration
+JWT_SECRET=fda21794197180d7386e36b9dcbc721c33cf00f2a782b98bd947998769b1a02a
+JWT_EXPIRES_IN=7d
+
+# OpenAI API Configuration (Optional - for AI difficulty ranking)
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# URL Configuration (Local)
+FRONTEND_URL=http://localhost:3000
+GATEWAY_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
