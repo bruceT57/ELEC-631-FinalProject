@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { VirtualSpace } from '../../types';
 import apiService from '../../services/api';
-import { QRCodeSVG } from 'qrcode.react';
 import PostList from '../student/PostList';
 import './Tutor.css';
 

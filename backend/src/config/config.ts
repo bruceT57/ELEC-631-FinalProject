@@ -61,10 +61,10 @@ class Config {
     if (isUsingDefaultFrontendUrl) {
       this.frontendUrl = `http://${this.localIpAddress}:3001`;
     }
-    
+
     console.log(`✓ Frontend URL (for QR codes): ${this.frontendUrl}`);
     console.log(`✓ Local IP Address: ${this.localIpAddress}`);
-    
+
     if (!this.jwtSecret || this.jwtSecret === 'default-secret-change-in-production') {
       console.warn('Warning: Using default JWT secret. Please set JWT_SECRET in production!');
     }

@@ -140,6 +140,14 @@ class Post extends Document {
 }
 ```
 
+## Quick Links
+
+- **[Local Development Setup](#setup-instructions)** - Run locally on your machine
+- **[Namecheap Deployment Guide](NAMECHEAP_DEPLOYMENT.md)** - Deploy to Namecheap Stellar hosting
+- **[MongoDB Atlas Setup](MONGODB_ATLAS_SETUP.md)** - Cloud database setup
+- **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Step-by-step deployment checklist
+- **[Quick Start Guide](QUICKSTART.md)** - 5-minute local setup
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -441,6 +449,56 @@ npm test
 - Efficient archiving scheduler (runs every 5 minutes)
 - Request rate limiting to prevent abuse
 - Optimized database queries with population
+
+## Deployment
+
+The Tutoring Tool can be deployed to various hosting platforms. Complete deployment guides are available:
+
+### Namecheap Stellar Hosting
+
+For deployment to Namecheap Stellar shared hosting with cPanel:
+
+1. **Read the deployment guide**: [NAMECHEAP_DEPLOYMENT.md](NAMECHEAP_DEPLOYMENT.md)
+2. **Setup MongoDB Atlas**: [MONGODB_ATLAS_SETUP.md](MONGODB_ATLAS_SETUP.md)
+3. **Follow the checklist**: [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
+
+**Quick Deployment Steps:**
+
+```bash
+# 1. Prepare deployment files
+npm run deploy:prepare
+
+# On Windows:
+deploy-prepare.bat
+
+# On Mac/Linux:
+./deploy-prepare.sh
+
+# 2. Configure environment
+cp .env.production .env
+# Edit .env with your MongoDB Atlas connection string and other settings
+
+# 3. Test locally
+npm run start:production
+
+# 4. Upload to Namecheap via cPanel File Manager or FTP
+# 5. Setup Node.js app in cPanel (see full guide)
+```
+
+### Other Platforms
+
+The application can also be deployed to:
+- **Heroku**: Use the production-server.js as entry point
+- **AWS EC2/Elastic Beanstalk**: Deploy as Node.js application
+- **DigitalOcean**: Use Node.js droplet
+- **Vercel/Netlify**: Frontend only (requires separate backend hosting)
+- **Docker**: Create container with production-server.js
+
+For all platforms:
+1. Use MongoDB Atlas for database
+2. Set environment variables (see `.env.production`)
+3. Build: `npm run build:production`
+4. Start: `npm run start:production`
 
 ## Troubleshooting
 
