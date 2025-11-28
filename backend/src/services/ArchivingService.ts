@@ -9,11 +9,12 @@ class ArchivingService {
 
   /** Start automatic archiving scheduler */
   public start(): void {
-    // Run every 5 minutes
-    this.job = schedule.scheduleJob('*/5 * * * *', async () => {
+    // Run every 1 minute (increased frequency for better responsiveness)
+    this.job = schedule.scheduleJob('*/1 * * * *', async () => {
+      console.log(`[ArchivingService] Checking for expired spaces at ${new Date().toISOString()}...`);
       await this.archiveExpiredSpaces();
     });
-    console.log('✓ Archiving service started (runs every 5 minutes)');
+    console.log('✓ Archiving service started (runs every 1 minute)');
   }
 
   /** Stop the scheduler */
@@ -60,7 +61,8 @@ class ArchivingService {
       // Get the space
       const space = await VirtualSpace.findById(spaceId)
         .populate('tutorId', '-password')
-        .populate('participants', '-password');
+        .populate('participants', '-password')
+        .lean();
 
       if (!space) {
         throw new Error('Space not found');
@@ -70,7 +72,9 @@ class ArchivingService {
       const posts = await Post.find({ spaceId })
         .populate('studentId', '-password')
         .populate('answeredBy', '-password')
-        .sort({ difficultyScore: -1 });
+        .populate('replies.author', '-password')
+        .sort({ difficultyScore: -1 })
+        .lean();
 
       // Get or create session
       let session = await Session.findOne({ spaceId });
@@ -109,6 +113,7 @@ class ArchivingService {
           answeredBy: post.answeredBy,
           answeredAt: post.answeredAt,
           createdAt: post.createdAt,
+          replies: post.replies // Include replies in the archive
         })),
         statistics: session.statistics,
       };
@@ -117,9 +122,8 @@ class ArchivingService {
       session.archiveSession(archivedData);
       await session.save();
 
-      // Update space status
-      space.status = SpaceStatus.ARCHIVED;
-      await space.save();
+      // Update space status using Mongoose model directly since 'space' is a lean object
+      await VirtualSpace.findByIdAndUpdate(spaceId, { status: SpaceStatus.ARCHIVED });
 
       console.log(`✓ Space ${space.spaceCode} archived successfully`);
     } catch (error) {
@@ -169,6 +173,29 @@ class ArchivingService {
     }
 
     await this.archiveSpace(spaceId);
+  }
+
+  /**
+   * Delete an archived session and all associated data
+   */
+  public async deleteArchivedSession(sessionId: string): Promise<void> {
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    const spaceId = session.spaceId;
+
+    // Delete the session
+    await Session.findByIdAndDelete(sessionId);
+
+    // Delete the virtual space
+    if (spaceId) {
+      await VirtualSpace.findByIdAndDelete(spaceId);
+      
+      // Delete all posts associated with the space
+      await Post.deleteMany({ spaceId });
+    }
   }
 }
 

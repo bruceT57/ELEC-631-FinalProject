@@ -41,4 +41,12 @@ router.post(
   ArchivingController.triggerArchiving
 );
 
+// DELETE /api/archives/:sessionId - Delete an archived session (Admin only)
+router.delete(
+  '/:sessionId',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.ADMIN),
+  ArchivingController.deleteArchivedSession
+);
+
 export default router;

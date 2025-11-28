@@ -17,6 +17,7 @@ export interface IVirtualSpace extends Document {
   qrCode: string;
   tutorId: mongoose.Types.ObjectId;
   name: string;
+  courseName: string;
   description: string;
   startTime: Date;
   endTime: Date;
@@ -54,6 +55,14 @@ const VirtualSpaceSchema: Schema = new Schema(
       required: true,
       trim: true,
       maxlength: 100
+    },
+    courseName: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true,
+      // Format: "MATH 101" (ALL CAPS COURSE + SPACE + NUMBER)
+      match: [/^[A-Z]+ \d+$/, 'Course name must be in format "COURSE 101" (e.g. MATH 101)']
     },
     description: {
       type: String,

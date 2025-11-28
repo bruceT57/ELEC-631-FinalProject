@@ -20,6 +20,7 @@ import authRoutes from './routes/auth';
 import spaceRoutes from './routes/spaces';
 import postRoutes from './routes/posts';
 import archiveRoutes from './routes/archives';
+import adminRoutes from './routes/admin';
 
 /**
  * Main Application class
@@ -79,6 +80,7 @@ class App {
     this.app.use('/api/spaces', spaceRoutes);
     this.app.use('/api/posts', postRoutes);
     this.app.use('/api/archives', archiveRoutes);
+    this.app.use('/api/admin', adminRoutes);
 
     // 404 handler
     this.app.use((req: Request, res: Response) => {

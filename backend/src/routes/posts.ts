@@ -98,4 +98,25 @@ router.get(
   PostController.getStatistics
 );
 
+// POST /api/posts/:postId/replies - Add a reply
+router.post(
+  '/:postId/replies',
+  AuthMiddleware.authenticate,
+  PostController.addReply
+);
+
+// POST /api/posts/:postId/like - Toggle like on post
+router.post(
+  '/:postId/like',
+  AuthMiddleware.authenticate,
+  PostController.toggleLike
+);
+
+// POST /api/posts/:postId/replies/:replyId/like - Toggle like on reply
+router.post(
+  '/:postId/replies/:replyId/like',
+  AuthMiddleware.authenticate,
+  PostController.toggleReplyLike
+);
+
 export default router;

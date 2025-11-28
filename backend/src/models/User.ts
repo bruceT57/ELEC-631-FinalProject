@@ -15,6 +15,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  isActive: boolean;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -59,6 +60,10 @@ const UserSchema = new Schema<IUser>(
       default: UserRole.STUDENT, // default aligns with routes using STUDENT/TUTOR/ADMIN
       required: true,
       index: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

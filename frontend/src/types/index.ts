@@ -15,6 +15,7 @@ export interface User {
   firstName: string;
   lastName: string;
   createdAt: string;
+  isActive?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export interface VirtualSpace {
   qrCode: string;
   tutorId: User;
   name: string;
+  courseName: string;
   description?: string;
   startTime: string;
   endTime: string;
@@ -70,6 +72,14 @@ export interface MediaAttachment {
   originalName: string;
 }
 
+export interface Reply {
+  _id: string;
+  author: User;
+  content: string;
+  createdAt: string;
+  likes: string[]; // User IDs
+}
+
 export interface Post {
   _id: string;
   spaceId: string | VirtualSpace;
@@ -85,8 +95,16 @@ export interface Post {
   isAnswered: boolean;
   answeredAt?: string;
   answeredBy?: User;
+  likes: string[]; // User IDs
+  replies: Reply[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProfileStats {
+  questionsAsked: number;
+  questionsAnswered: number;
+  likesReceived: number;
 }
 
 /**
@@ -129,6 +147,7 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   role: UserRole;
+  tutorCode?: string;
 }
 
 export interface AuthResponse {
