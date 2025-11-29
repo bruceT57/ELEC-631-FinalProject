@@ -111,9 +111,9 @@ app.use((err, req, res, next) => {
 
 // ========== Start Server ==========
 
-async function startServer() {
+async function initialize() {
   try {
-    console.log('Starting Tutoring Tool Server...');
+    console.log('Initializing Tutoring Tool Server...');
     console.log('Environment:', config.nodeEnv);
 
     // Validate MongoDB URI
@@ -131,21 +131,13 @@ async function startServer() {
       console.log('✓ Archiving service started');
     }
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log('');
-      console.log('='.repeat(60));
-      console.log(`✓ Tutoring Tool Server running on port ${PORT}`);
-      console.log(`✓ Environment: ${config.nodeEnv}`);
-      console.log(`✓ Database: Connected to MongoDB`);
-      console.log(`✓ Frontend: Serving from ${frontendBuildPath}`);
-      console.log(`✓ Archiving: Active`);
-      console.log('='.repeat(60));
-      console.log('');
-    });
+    console.log('✓ Server initialized successfully');
+    console.log('✓ Application ready - LiteSpeed/Passenger will handle HTTP binding');
+
+    return true;
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Failed to initialize server:', error);
+    throw error;
   }
 }
 
@@ -169,7 +161,11 @@ async function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// Start the server
-startServer();
+// Initialize the application (no listen() call - LiteSpeed handles that)
+initialize().catch((error) => {
+  console.error('Failed to initialize:', error);
+  process.exit(1);
+});
 
+// Export the Express app for LiteSpeed/Passenger
 module.exports = app;

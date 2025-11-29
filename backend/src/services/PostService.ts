@@ -11,6 +11,7 @@ export interface IPostMedia {
 export interface IPostData {
   spaceId: string;
   studentId: string;
+  studentNickname: string; // For displaying student name
   question: string;
   inputType?: string;
   difficultyLevel?: string;
@@ -26,6 +27,7 @@ class PostService {
     const post = await Post.create({
       spaceId: data.spaceId,
       studentId: data.studentId,
+      studentNickname: data.studentNickname,
       question: data.question,
       inputType: data.inputType,
       difficultyLevel: data.difficultyLevel,

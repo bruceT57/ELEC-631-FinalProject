@@ -43,7 +43,8 @@ export interface IKnowledgePoint {
  */
 export interface IPost extends Document {
   spaceId: mongoose.Types.ObjectId;
-  studentId: mongoose.Types.ObjectId;
+  studentId: mongoose.Types.ObjectId; // References StudentParticipant
+  studentNickname: string; // Denormalized for performance
   question: string;
   inputType: InputType;
   originalText?: string;
@@ -74,9 +75,14 @@ const PostSchema: Schema = new Schema(
     },
     studentId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'StudentParticipant',
       required: true,
       index: true
+    },
+    studentNickname: {
+      type: String,
+      required: true,
+      trim: true
     },
     question: {
       type: String,

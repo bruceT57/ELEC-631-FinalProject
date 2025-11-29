@@ -20,7 +20,10 @@ router.post(
 // GET /api/spaces/code/:code - Get space by code (Public for joining)
 router.get('/code/:code', VirtualSpaceController.getSpaceByCode);
 
-// POST /api/spaces/join/:code - Join a space (Student)
+// POST /api/spaces/join-anonymous/:code - Join a space anonymously (No auth required)
+router.post('/join-anonymous/:code', VirtualSpaceController.joinSpaceAnonymous);
+
+// POST /api/spaces/join/:code - Join a space (Student - deprecated)
 router.post(
   '/join/:code',
   AuthMiddleware.authenticate,

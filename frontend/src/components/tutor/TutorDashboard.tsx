@@ -111,7 +111,7 @@ const TutorDashboard: React.FC = () => {
   return (
     <div className="dashboard tutor-dashboard">
       <header className="dashboard-header">
-        <h1>Tutor Dashboard</h1>
+        <h1>Rice OASUS Tutoring Tool - Tutor Dashboard</h1>
         <div className="user-info">
           <span>Welcome, {user?.firstName}!</span>
           <button onClick={logout} className="btn-secondary">

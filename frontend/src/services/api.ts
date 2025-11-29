@@ -107,6 +107,14 @@ class ApiService {
     return response.data;
   }
 
+  async joinSpaceAnonymous(
+    code: string,
+    data: { nickname: string; email: string }
+  ): Promise<{ participantId: string; sessionToken: string; space: VirtualSpace }> {
+    const response = await this.api.post(`/spaces/join-anonymous/${code}`, data);
+    return response.data;
+  }
+
   async getTutorSpaces(status?: string): Promise<{ spaces: VirtualSpace[] }> {
     const response = await this.api.get('/spaces/tutor', { params: { status } });
     return response.data;
@@ -187,6 +195,58 @@ class ApiService {
 
   async manualArchive(spaceId: string): Promise<void> {
     await this.api.post(`/archives/manual/${spaceId}`);
+  }
+
+  /**
+   * Admin User Management APIs
+   */
+  async getAllUsers(): Promise<{ users: User[] }> {
+    const response = await this.api.get('/admin/users');
+    return response.data;
+  }
+
+  async getUserById(userId: string): Promise<{ user: User }> {
+    const response = await this.api.get(`/admin/users/${userId}`);
+    return response.data;
+  }
+
+  async createUser(userData: {
+    username: string;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  }): Promise<{ user: User; message: string }> {
+    const response = await this.api.post('/admin/users', userData);
+    return response.data;
+  }
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<{ user: User; message: string }> {
+    const response = await this.api.put(`/admin/users/${userId}`, updates);
+    return response.data;
+  }
+
+  async deleteUser(userId: string): Promise<{ message: string }> {
+    const response = await this.api.delete(`/admin/users/${userId}`);
+    return response.data;
+  }
+
+  async resetUserPassword(userId: string, newPassword: string): Promise<{ message: string }> {
+    const response = await this.api.put(`/admin/users/${userId}/reset-password`, { newPassword });
+    return response.data;
+  }
+
+  async getUserStatistics(): Promise<{
+    statistics: {
+      total: number;
+      tutors: number;
+      admins: number;
+      recentUsers: User[];
+    };
+  }> {
+    const response = await this.api.get('/admin/users/statistics');
+    return response.data;
   }
 }
 

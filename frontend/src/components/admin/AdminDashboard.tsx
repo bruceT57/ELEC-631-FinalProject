@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ArchivedSession } from '../../types';
 import apiService from '../../services/api';
+import UserManagement from './UserManagement';
 import './Admin.css';
+
+type ActiveTab = 'archives' | 'users';
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('archives');
   const [archivedSpaces, setArchivedSpaces] = useState<ArchivedSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +42,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="dashboard admin-dashboard">
       <header className="dashboard-header">
-        <h1>Admin Dashboard - Archived Spaces</h1>
+        <h1>Rice OASUS Tutoring Tool - Admin Dashboard</h1>
         <div className="user-info">
           <span>Welcome, {user?.firstName}!</span>
           <button onClick={logout} className="btn-secondary">
@@ -47,8 +51,28 @@ const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="dashboard-content">
-        <aside className="sidebar">
+      <div className="admin-tabs">
+        <button
+          className={`tab-button ${activeTab === 'archives' ? 'active' : ''}`}
+          onClick={() => setActiveTab('archives')}
+        >
+          Archived Sessions
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          User Management
+        </button>
+      </div>
+
+      {activeTab === 'users' ? (
+        <div className="dashboard-content">
+          <UserManagement />
+        </div>
+      ) : (
+        <div className="dashboard-content">
+          <aside className="sidebar">
           <h3>Archived Sessions</h3>
           {loading ? (
             <p>Loading...</p>
@@ -166,7 +190,8 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
         </main>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

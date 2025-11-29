@@ -12,7 +12,7 @@ const Register: React.FC = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: UserRole.STUDENT
+    role: UserRole.TUTOR
   });
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -78,7 +78,7 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Register for Tutoring Tool</h1>
+        <h1>Rice OASUS Tutoring Tool</h1>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -150,8 +150,8 @@ const Register: React.FC = () => {
               onChange={handleChange}
               disabled={loading}
             >
-              <option value={UserRole.STUDENT}>Student</option>
               <option value={UserRole.TUTOR}>Tutor</option>
+              <option value={UserRole.ADMIN}>Admin</option>
             </select>
           </div>
 

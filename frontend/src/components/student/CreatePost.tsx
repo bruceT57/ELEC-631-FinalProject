@@ -6,10 +6,12 @@ import voiceService from '../../utils/voiceService';
 
 interface CreatePostProps {
   spaceId: string;
-  onPostCreated: () => void;
+  participantId?: string; // For anonymous students
+  sessionToken?: string; // For anonymous students
+  onPostCreated?: () => void;
 }
 
-const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
+const CreatePost: React.FC<CreatePostProps> = ({ spaceId, participantId, sessionToken, onPostCreated }) => {
   const [inputMode, setInputMode] = useState<InputType>(InputType.TEXT);
   const [question, setQuestion] = useState('');
   const [originalText, setOriginalText] = useState('');
@@ -85,6 +87,12 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
       formData.append('question', question);
       formData.append('inputType', inputMode);
 
+      // If anonymous student, include participant info
+      if (participantId && sessionToken) {
+        formData.append('participantId', participantId);
+        formData.append('sessionToken', sessionToken);
+      }
+
       if (originalText) {
         formData.append('originalText', originalText);
       }
@@ -104,7 +112,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
         fileInputRef.current.value = '';
       }
 
-      onPostCreated();
+      if (onPostCreated) {
+        onPostCreated();
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create post');
     } finally {

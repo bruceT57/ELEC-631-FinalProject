@@ -9,24 +9,56 @@ import { InputType } from '../models';
 class PostController {
   /**
    * Create a new post
+   * Supports both authenticated users and anonymous students
    */
   public async createPost(req: AuthRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
-      const { spaceId, question, inputType, originalText } = req.body;
+      const { spaceId, question, inputType, originalText, participantId, sessionToken } = req.body;
 
       if (!spaceId || !question || !inputType) {
         res.status(400).json({ error: 'Missing required fields' });
         return;
       }
 
+      let studentId: string;
+      let studentNickname: string;
+
+      // Check if anonymous student
+      if (participantId && sessionToken) {
+        // Verify session token
+        const StudentParticipant = (await import('../models/StudentParticipant')).default;
+        const participant = await StudentParticipant.findOne({
+          _id: participantId,
+          sessionToken,
+          spaceId
+        });
+
+        if (!participant) {
+          res.status(401).json({ error: 'Invalid session' });
+          return;
+        }
+
+        studentId = String(participant._id);
+        studentNickname = participant.nickname;
+      } else if (req.user) {
+        // Authenticated user (tutor/admin posting on behalf, or legacy student)
+        studentId = req.user.userId;
+        const User = (await import('../models/User')).default;
+        const user = await User.findById(studentId);
+        if (!user) {
+          res.status(404).json({ error: 'User not found' });
+          return;
+        }
+        studentNickname = `${user.firstName} ${user.lastName}`;
+      } else {
+        res.status(401).json({ error: 'Unauthorized - Please provide session credentials or login' });
+        return;
+      }
+
       const postData: IPostData = {
         spaceId,
-        studentId: req.user.userId,
+        studentId,
+        studentNickname,
         question,
         inputType,
         originalText,
@@ -49,6 +81,7 @@ class PostController {
         post
       });
     } catch (error: any) {
+      console.error('Error in createPost:', error);
       res.status(400).json({
         error: error.message || 'Failed to create post'
       });

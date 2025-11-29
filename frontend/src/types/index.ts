@@ -9,12 +9,14 @@ export enum UserRole {
 
 export interface User {
   id: string;
+  _id: string; // MongoDB ID
   username: string;
   email: string;
   role: UserRole;
   firstName: string;
   lastName: string;
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

@@ -40,16 +40,27 @@ const upload = multer({
  * Post Routes
  */
 
-// POST /api/posts - Create new post
+// Optional authentication middleware - allows both authenticated and anonymous requests
+const optionalAuth = (req: any, res: any, next: any) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    // Has auth token, use normal authentication
+    return AuthMiddleware.authenticate(req, res, next);
+  }
+  // No auth token, continue without setting req.user
+  next();
+};
+
+// POST /api/posts - Create new post (supports both authenticated and anonymous)
 router.post(
   '/',
-  AuthMiddleware.authenticate,
+  optionalAuth,
   upload.array('attachments', 5),
   PostController.createPost
 );
 
-// GET /api/posts/space/:spaceId - Get posts by space
-router.get('/space/:spaceId', AuthMiddleware.authenticate, PostController.getPostsBySpace);
+// GET /api/posts/space/:spaceId - Get posts by space (accessible to anonymous students)
+router.get('/space/:spaceId', optionalAuth, PostController.getPostsBySpace);
 
 // GET /api/posts/student - Get student's posts
 router.get(

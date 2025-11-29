@@ -5,6 +5,7 @@ import apiService from '../../services/api';
 interface PostListProps {
   spaceId: string;
   isStudent: boolean;
+  sessionToken?: string; // For anonymous students
 }
 
 const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
