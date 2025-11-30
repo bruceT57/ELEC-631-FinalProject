@@ -337,28 +337,33 @@ const UserManagement: React.FC = () => {
                       </span>
                     </td>
                     <td>{new Date(user.createdAt!).toLocaleDateString()}</td>
-                    <td className="actions-cell">
-                      <button
-                        onClick={() => startEdit(user)}
-                        className="btn-small btn-edit"
-                        disabled={loading}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setShowResetPassword(user._id)}
-                        className="btn-small btn-reset"
-                        disabled={loading}
-                      >
-                        Reset Password
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user._id, user.username)}
-                        className="btn-small btn-delete"
-                        disabled={loading}
-                      >
-                        Delete
-                      </button>
+                    <td>
+                      <div className="actions-cell">
+                        <button
+                          onClick={() => startEdit(user)}
+                          className="btn-small btn-edit"
+                          disabled={loading}
+                          title="Edit user details"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setShowResetPassword(user._id)}
+                          className="btn-small btn-reset"
+                          disabled={loading}
+                          title="Reset user password"
+                        >
+                          Reset Password
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user._id, user.username)}
+                          className="btn-small btn-delete"
+                          disabled={loading}
+                          title="Delete user account"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

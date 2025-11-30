@@ -19,6 +19,7 @@ const authRoutes = require('./backend/dist/routes/auth').default;
 const spaceRoutes = require('./backend/dist/routes/spaces').default;
 const postRoutes = require('./backend/dist/routes/posts').default;
 const archiveRoutes = require('./backend/dist/routes/archives').default;
+const adminRoutes = require('./backend/dist/routes/admin').default;
 
 // Import archiving service
 const archivingService = require('./backend/dist/services/ArchivingService').default;
@@ -82,6 +83,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/spaces', spaceRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/archives', archiveRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ========== Serve Frontend Static Files ==========
 

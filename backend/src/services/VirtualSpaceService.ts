@@ -179,6 +179,18 @@ class VirtualSpaceService {
   }
 
   /**
+   * Get participant count for a space (includes anonymous students)
+   */
+  public async getParticipantCount(spaceId: string): Promise<number> {
+    const StudentParticipant = (await import('../models/StudentParticipant')).default;
+
+    // Count unique anonymous student participants
+    const count = await StudentParticipant.countDocuments({ spaceId });
+
+    return count;
+  }
+
+  /**
    * Delete a space (only if no posts exist)
    */
   public async deleteSpace(spaceId: string): Promise<void> {

@@ -39,6 +39,7 @@ export interface VirtualSpace {
   endTime: string;
   status: SpaceStatus;
   participants: User[];
+  participantCount?: number; // Count of anonymous students
   createdAt: string;
   updatedAt: string;
 }
@@ -72,10 +73,18 @@ export interface MediaAttachment {
   originalName: string;
 }
 
+export interface StudentComment {
+  studentId: string;
+  studentNickname: string;
+  comment: string;
+  createdAt: string;
+}
+
 export interface Post {
   _id: string;
   spaceId: string | VirtualSpace;
-  studentId: User;
+  studentId: User | string; // Can be User object or StudentParticipant ID
+  studentNickname: string; // Display name for anonymous students
   question: string;
   inputType: InputType;
   originalText?: string;
@@ -83,6 +92,7 @@ export interface Post {
   difficultyLevel: DifficultyLevel;
   difficultyScore: number;
   knowledgePoints: KnowledgePoint[];
+  studentComments: StudentComment[]; // Comments from other students
   tutorResponse?: string;
   isAnswered: boolean;
   answeredAt?: string;

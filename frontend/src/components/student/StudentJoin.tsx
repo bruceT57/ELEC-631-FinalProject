@@ -212,7 +212,6 @@ const StudentJoin: React.FC = () => {
       <div className="dashboard-content">
         <div className="student-session">
           <div className="post-question-section">
-            <h3>Ask a Question</h3>
             <CreatePost
               spaceId={space._id}
               participantId={participantId}
@@ -225,6 +224,7 @@ const StudentJoin: React.FC = () => {
             <PostList
               spaceId={space._id}
               sessionToken={sessionToken}
+              participantId={participantId}
               isStudent={true}
             />
           </div>

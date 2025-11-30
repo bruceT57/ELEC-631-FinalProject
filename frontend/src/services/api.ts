@@ -165,6 +165,20 @@ class ApiService {
     return res.data;
   }
 
+  async addStudentComment(
+    postId: string,
+    comment: string,
+    participantId: string,
+    sessionToken: string
+  ): Promise<{ post: Post }> {
+    const response = await this.api.post(`/posts/${postId}/comment`, {
+      comment,
+      participantId,
+      sessionToken
+    });
+    return response.data;
+  }
+
   async getUnansweredPosts(spaceId: string): Promise<{ posts: Post[] }> {
     const response = await this.api.get(`/posts/space/${spaceId}/unanswered`);
     return response.data;

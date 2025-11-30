@@ -6,29 +6,48 @@ interface PostListProps {
   spaceId: string;
   isStudent: boolean;
   sessionToken?: string; // For anonymous students
+  participantId?: string; // For anonymous students
+  onPostsUpdate?: () => void; // Callback when posts are updated
 }
 
-const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
+const PostList: React.FC<PostListProps> = ({ spaceId, isStudent, sessionToken, participantId, onPostsUpdate }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [sortBy, setSortBy] = useState<'difficulty' | 'time'>('difficulty');
   const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [tutorResponse, setTutorResponse] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [commentingOn, setCommentingOn] = useState<string | null>(null); // Post ID being commented on
+  const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
     loadPosts();
+
+    // Auto-refresh every 5 seconds
+    const intervalId = setInterval(() => {
+      loadPosts(false); // Silent refresh without loading indicator
+    }, 5000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
   }, [spaceId, sortBy]);
 
-  const loadPosts = async () => {
-    setLoading(true);
+  const loadPosts = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const { posts } = await apiService.getPostsBySpace(spaceId, sortBy);
       setPosts(posts);
+      if (initialLoad) setInitialLoad(false);
+
+      // Trigger callback to update statistics in parent component
+      if (onPostsUpdate) {
+        onPostsUpdate();
+      }
     } catch (err) {
       console.error('Failed to load posts:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -43,6 +62,22 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
       await loadPosts();
     } catch (err) {
       console.error('Failed to answer post:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddComment = async (postId: string) => {
+    if (!commentText.trim() || !participantId || !sessionToken) return;
+
+    setSubmitting(true);
+    try {
+      await apiService.addStudentComment(postId, commentText.trim(), participantId, sessionToken);
+      setCommentText('');
+      setCommentingOn(null);
+      await loadPosts(false); // Refresh posts silently
+    } catch (err) {
+      console.error('Failed to add comment:', err);
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +118,7 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
             <div className="post-header">
               <div className="post-author">
                 <strong>
-                  {post.studentId.firstName} {post.studentId.lastName}
+                  {post.studentNickname}
                 </strong>
                 <span className="post-time">
                   {new Date(post.createdAt).toLocaleString()}
@@ -175,6 +210,66 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
               </div>
             ) : (
               <div className="unanswered-badge">Waiting for tutor response...</div>
+            )}
+
+            {/* Student Comments Section */}
+            {post.studentComments && post.studentComments.length > 0 && (
+              <div className="student-comments">
+                <strong>Student Responses ({post.studentComments.length}):</strong>
+                {post.studentComments.map((comment, idx) => (
+                  <div key={idx} className="student-comment">
+                    <div className="comment-header">
+                      <span className="comment-author">{comment.studentNickname}</span>
+                      <span className="comment-time">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="comment-text">{comment.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Comment Section (Only for students) */}
+            {isStudent && participantId && sessionToken && (
+              <div className="add-comment-section">
+                {commentingOn === post._id ? (
+                  <>
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add your response to help this student..."
+                      rows={3}
+                      maxLength={1000}
+                    />
+                    <div className="comment-actions">
+                      <button
+                        onClick={() => handleAddComment(post._id)}
+                        disabled={submitting || !commentText.trim()}
+                        className="btn-primary btn-small"
+                      >
+                        {submitting ? 'Posting...' : 'Post Response'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCommentingOn(null);
+                          setCommentText('');
+                        }}
+                        className="btn-secondary btn-small"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setCommentingOn(post._id)}
+                    className="btn-secondary btn-small"
+                  >
+                    💬 Respond to this question
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ))

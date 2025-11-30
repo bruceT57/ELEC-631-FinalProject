@@ -39,6 +39,16 @@ export interface IKnowledgePoint {
 }
 
 /**
+ * Student comment interface
+ */
+export interface IStudentComment {
+  studentId: mongoose.Types.ObjectId; // References StudentParticipant
+  studentNickname: string;
+  comment: string;
+  createdAt: Date;
+}
+
+/**
  * Post interface extending Mongoose Document
  */
 export interface IPost extends Document {
@@ -52,6 +62,7 @@ export interface IPost extends Document {
   difficultyLevel: DifficultyLevel;
   difficultyScore: number;
   knowledgePoints: IKnowledgePoint[];
+  studentComments: IStudentComment[]; // Comments from other students
   tutorResponse?: string;
   isAnswered: boolean;
   answeredAt?: Date;
@@ -60,6 +71,7 @@ export interface IPost extends Document {
   updatedAt: Date;
   markAsAnswered(tutorId: mongoose.Types.ObjectId, response: string): void;
   updateDifficultyRanking(level: DifficultyLevel, score: number): void;
+  addStudentComment(studentId: mongoose.Types.ObjectId, studentNickname: string, comment: string): void;
 }
 
 /**
@@ -124,6 +136,30 @@ const PostSchema: Schema = new Schema(
         concept: { type: String, required: true }
       }
     ],
+    studentComments: [
+      {
+        studentId: {
+          type: Schema.Types.ObjectId,
+          ref: 'StudentParticipant',
+          required: true
+        },
+        studentNickname: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        comment: {
+          type: String,
+          required: true,
+          trim: true,
+          maxlength: 1000
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
     tutorResponse: {
       type: String,
       trim: true,
@@ -168,6 +204,22 @@ PostSchema.methods.updateDifficultyRanking = function (
 ): void {
   this.difficultyLevel = level;
   this.difficultyScore = score;
+};
+
+/**
+ * Method to add student comment
+ */
+PostSchema.methods.addStudentComment = function (
+  studentId: mongoose.Types.ObjectId,
+  studentNickname: string,
+  comment: string
+): void {
+  this.studentComments.push({
+    studentId,
+    studentNickname,
+    comment,
+    createdAt: new Date()
+  });
 };
 
 /**

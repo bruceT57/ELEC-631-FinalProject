@@ -25,6 +25,13 @@ const TutorDashboard: React.FC = () => {
 
   useEffect(() => {
     loadSpaces();
+
+    // Auto-refresh spaces every 10 seconds to update participant counts
+    const intervalId = setInterval(() => {
+      loadSpaces();
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -81,6 +88,29 @@ const TutorDashboard: React.FC = () => {
       setDetailsError(err.response?.data?.error || 'Failed to load space details');
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  // Refresh statistics silently (triggered by post updates)
+  const refreshStatistics = async () => {
+    if (!selectedSpace) return;
+
+    try {
+      const statsData = await apiService.getPostStatistics(selectedSpace._id);
+
+      // Handle statistics
+      if (statsData.statistics) {
+        const stats = statsData.statistics;
+        setStatistics({
+          total: stats.total || 0,
+          answered: stats.answered || 0,
+          unanswered: stats.unanswered || 0,
+          averageScore: stats.avgDifficulty || stats.averageScore || 0
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh statistics:', err);
+      // Silent fail - don't show error to user
     }
   };
 
@@ -202,7 +232,7 @@ const TutorDashboard: React.FC = () => {
                   <h4>{space.name}</h4>
                   <p className="space-code">Code: {space.spaceCode}</p>
                   <p className="participant-count">
-                    Participants: {space.participants.length}
+                    Participants: {space.participantCount ?? 0}
                   </p>
                   <span className={`status-badge ${space.status}`}>{space.status}</span>
                 </div>
@@ -274,7 +304,11 @@ const TutorDashboard: React.FC = () => {
                 </div>
               )}
 
-              <PostList spaceId={selectedSpace._id} isStudent={false} />
+              <PostList
+                spaceId={selectedSpace._id}
+                isStudent={false}
+                onPostsUpdate={refreshStatistics}
+              />
             </>
           ) : (
             <div className="empty-state-main">

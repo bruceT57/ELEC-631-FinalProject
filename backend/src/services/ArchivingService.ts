@@ -92,14 +92,15 @@ class ArchivingService {
           name: space.name,
           description: space.description,
           spaceCode: space.spaceCode,
-          tutor: space.tutorId,
+          tutor: space.tutorId, // Already populated with tutor data
           participants: space.participants,
           startTime: space.startTime,
           endTime: space.endTime,
         },
         posts: posts.map((post) => ({
           question: post.question,
-          student: post.studentId,
+          studentNickname: post.studentNickname, // Use denormalized nickname
+          student: post.studentId, // StudentParticipant data
           inputType: post.inputType,
           difficultyLevel: post.difficultyLevel,
           difficultyScore: post.difficultyScore,

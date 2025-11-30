@@ -292,6 +292,68 @@ class PostController {
       });
     }
   }
+
+  /**
+   * Add a student comment to a post (Anonymous students only)
+   * Allows students in the same virtual space to respond to each other
+   */
+  public async addStudentComment(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params; // Post ID
+      const { comment, participantId, sessionToken } = req.body;
+
+      if (!comment || !comment.trim()) {
+        res.status(400).json({ error: 'Comment is required' });
+        return;
+      }
+
+      if (!participantId || !sessionToken) {
+        res.status(400).json({ error: 'Anonymous session required' });
+        return;
+      }
+
+      // Get the post to verify it exists and get the spaceId
+      const Post = (await import('../models/Post')).default;
+      const post = await Post.findById(id);
+
+      if (!post) {
+        res.status(404).json({ error: 'Post not found' });
+        return;
+      }
+
+      // Verify session token and ensure student is in the same space
+      const StudentParticipant = (await import('../models/StudentParticipant')).default;
+      const participant = await StudentParticipant.findOne({
+        _id: participantId,
+        sessionToken,
+        spaceId: post.spaceId
+      });
+
+      if (!participant) {
+        res.status(401).json({ error: 'Invalid session or not authorized for this space' });
+        return;
+      }
+
+      // Add the comment
+      post.addStudentComment(
+        participant._id as any,
+        participant.nickname,
+        comment.trim()
+      );
+
+      await post.save();
+
+      res.status(200).json({
+        message: 'Comment added successfully',
+        post
+      });
+    } catch (error: any) {
+      console.error('Error in addStudentComment:', error);
+      res.status(400).json({
+        error: error.message || 'Failed to add comment'
+      });
+    }
+  }
 }
 
 export default new PostController();

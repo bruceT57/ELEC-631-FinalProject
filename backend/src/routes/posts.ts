@@ -81,6 +81,9 @@ router.put(
   PostController.answerPost
 );
 
+// POST /api/posts/:id/comment - Add student comment (Anonymous students)
+router.post('/:id/comment', PostController.addStudentComment);
+
 // PUT /api/posts/:id - Update post
 router.put('/:id', AuthMiddleware.authenticate, PostController.updatePost);
 

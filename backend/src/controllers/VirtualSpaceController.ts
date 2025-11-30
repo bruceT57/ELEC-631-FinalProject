@@ -36,7 +36,8 @@ class VirtualSpaceController {
   }
 
   /**
-   * Get space by code
+   * Get space by code (Public endpoint for QR code scanning)
+   * Only returns ACTIVE spaces to prevent access to archived sessions
    */
   public async getSpaceByCode(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -46,6 +47,16 @@ class VirtualSpaceController {
 
       if (!space) {
         res.status(404).json({ error: 'Virtual space not found' });
+        return;
+      }
+
+      // Only return active spaces for public access
+      if (space.status !== SpaceStatus.ACTIVE) {
+        res.status(400).json({
+          error: space.status === SpaceStatus.ARCHIVED
+            ? 'This session has been archived and is no longer accessible'
+            : 'This session is not currently active'
+        });
         return;
       }
 
@@ -116,9 +127,13 @@ class VirtualSpaceController {
         return;
       }
 
-      // Check if space is active
+      // Check if space is active - reject archived or expired spaces
       if (space.status !== SpaceStatus.ACTIVE) {
-        res.status(400).json({ error: 'This session is not currently active' });
+        res.status(400).json({
+          error: space.status === SpaceStatus.ARCHIVED
+            ? 'This session has been archived and is no longer accepting questions'
+            : 'This session is not currently active'
+        });
         return;
       }
 
@@ -176,7 +191,20 @@ class VirtualSpaceController {
         status as SpaceStatus
       );
 
-      res.status(200).json({ spaces });
+      // Add participant count to each space (counts anonymous students)
+      const spacesWithCount = await Promise.all(
+        spaces.map(async (space) => {
+          const participantCount = await VirtualSpaceService.getParticipantCount(
+            String(space._id)
+          );
+          return {
+            ...space.toObject(),
+            participantCount
+          };
+        })
+      );
+
+      res.status(200).json({ spaces: spacesWithCount });
     } catch (error: any) {
       res.status(500).json({
         error: error.message || 'Failed to get spaces'

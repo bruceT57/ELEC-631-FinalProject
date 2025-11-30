@@ -154,7 +154,7 @@ const AdminDashboard: React.FC = () => {
                   <div key={index} className="archived-post-card">
                     <div className="post-header">
                       <strong>
-                        {post.student?.firstName} {post.student?.lastName}
+                        {post.studentNickname || 'Unknown Student'}
                       </strong>
                       <span className="post-time">
                         {new Date(post.createdAt).toLocaleString()}
