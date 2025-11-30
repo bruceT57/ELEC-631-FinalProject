@@ -365,28 +365,29 @@ const TutorDashboard: React.FC = () => {
                     className="ai-report-content" 
                     style={{ 
                       backgroundColor: '#fafafa', 
-                      padding: '30px', 
+                      padding: '20px', 
                       borderRadius: '8px', 
                       border: '1px solid #e0e0e0',
                       lineHeight: '1.6',
-                      color: '#444'
+                      color: '#333333', // Enforce dark text color
+                      fontSize: '14px'
                     }}
                   >
-                    <div style={{ marginBottom: '20px', textAlign: 'center', borderBottom: '2px solid #673ab7', paddingBottom: '10px' }}>
-                      <h2 style={{ color: '#673ab7', margin: '0 0 5px 0' }}>Session Summary Report</h2>
-                      <p style={{ margin: 0, color: '#666', fontSize: '0.9em' }}>
+                    <div style={{ marginBottom: '15px', textAlign: 'center', borderBottom: '2px solid #673ab7', paddingBottom: '8px' }}>
+                      <h2 style={{ color: '#673ab7', margin: '0 0 4px 0', fontSize: '1.4em' }}>Session Summary Report</h2>
+                      <p style={{ margin: 0, color: '#666', fontSize: '0.85em' }}>
                         Space: {selectedSpace.name} | Date: {new Date().toLocaleDateString()}
                       </p>
                     </div>
                     
                      {/* Enhanced markdown rendering */}
-                    <div dangerouslySetInnerHTML={{ 
+                    <div className="markdown-body" dangerouslySetInnerHTML={{ 
                       __html: sessionSummary
                         .replace(/\n/g, '<br/>')
-                        .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #2c3e50; font-weight: 600;">$1</strong>')
-                        .replace(/^# (.*$)/gim, '<h1 style="color: #673ab7; border-bottom: 1px solid #ddd; padding-bottom: 5px;">$1</h1>')
-                        .replace(/^## (.*$)/gim, '<h2 style="color: #5e35b1; margin-top: 20px;">$1</h2>')
-                        .replace(/^- (.*$)/gim, '<li style="margin-left: 20px;">$1</li>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/^# (.*$)/gim, '<h3 style="color: #5e35b1; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; margin-bottom: 8px; font-size: 1.2em;">$1</h3>')
+                        .replace(/^## (.*$)/gim, '<h4 style="color: #5e35b1; margin-top: 12px; margin-bottom: 5px; font-size: 1.1em;">$1</h4>')
+                        .replace(/^- (.*$)/gim, '<li style="margin-left: 15px; margin-bottom: 4px;">$1</li>')
                     }} />
                   </div>
                 ) : (

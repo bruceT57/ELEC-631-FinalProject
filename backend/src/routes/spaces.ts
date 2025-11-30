@@ -64,6 +64,14 @@ router.get(
   VirtualSpaceController.getParticipants
 );
 
+// POST /api/spaces/:id/summary - Generate AI session summary (Tutor only)
+router.post(
+  '/:id/summary',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.TUTOR, UserRole.ADMIN),
+  VirtualSpaceController.generateSessionSummary
+);
+
 // DELETE /api/spaces/:id - Delete space (Tutor only)
 router.delete(
   '/:id',

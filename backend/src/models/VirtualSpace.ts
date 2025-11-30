@@ -22,6 +22,7 @@ export interface IVirtualSpace extends Document {
   endTime: Date;
   status: SpaceStatus;
   participants: mongoose.Types.ObjectId[];
+  aiSessionSummary?: string; // AI-generated summary of the session
   createdAt: Date;
   updatedAt: Date;
   isExpired(): boolean;
@@ -79,7 +80,11 @@ const VirtualSpaceSchema: Schema = new Schema(
         type: Schema.Types.ObjectId,
         ref: 'User'
       }
-    ]
+    ],
+    aiSessionSummary: {
+      type: String,
+      trim: true
+    }
   },
   {
     timestamps: true

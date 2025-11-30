@@ -2,6 +2,7 @@ import QRCode from 'qrcode';
 import { VirtualSpace, IVirtualSpace, SpaceStatus, Session } from '../models';
 import { randomBytes } from 'crypto';
 import config from '../config/config';
+import AIRankingService from './AIRankingService';
 
 /**
  * Virtual Space creation data interface
@@ -191,6 +192,27 @@ class VirtualSpaceService {
 
     await VirtualSpace.findByIdAndDelete(spaceId);
     await Session.deleteMany({ spaceId });
+  }
+
+  /**
+   * Generate AI session summary
+   */
+  public async generateSessionSummary(spaceId: string): Promise<string> {
+    // Load all posts for this space
+    const Post = (await import('../models')).Post;
+    const posts = await Post.find({ spaceId }).populate('knowledgePoints');
+
+    if (!posts || posts.length === 0) {
+      throw new Error('No posts found in this session to summarize.');
+    }
+
+    // Generate summary via AI
+    const summary = await AIRankingService.generateSessionSummary(posts);
+
+    // Save summary to VirtualSpace
+    await VirtualSpace.findByIdAndUpdate(spaceId, { aiSessionSummary: summary });
+
+    return summary;
   }
 
   /**

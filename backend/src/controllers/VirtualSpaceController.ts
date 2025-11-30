@@ -275,6 +275,27 @@ class VirtualSpaceController {
   }
 
   /**
+   * Generate AI session summary
+   */
+  public async generateSessionSummary(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+      const summary = await VirtualSpaceService.generateSessionSummary(id);
+
+      res.status(200).json({ summary });
+    } catch (error: any) {
+      res.status(500).json({
+        error: error.message || 'Failed to generate session summary'
+      });
+    }
+  }
+
+  /**
    * Delete a space
    */
   public async deleteSpace(req: AuthRequest, res: Response): Promise<void> {

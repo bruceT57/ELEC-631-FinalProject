@@ -225,6 +225,67 @@ Respond in this exact JSON format:
 
     return summary.join('\n');
   }
+
+  /**
+   * Generate comprehensive session summary
+   */
+  public async generateSessionSummary(posts: any[]): Promise<string> {
+    if (!this.apiKey || posts.length === 0) {
+      return 'No summary available (insufficient data or missing API key).';
+    }
+
+    try {
+      // Prepare data for AI
+      const questionsData = posts.map(p => ({
+        question: p.question,
+        difficulty: p.difficultyLevel,
+        topics: p.knowledgePoints.map((kp: any) => kp.concept).join(', ')
+      })).slice(0, 50); // Limit to last 50 questions to avoid token limits
+
+      const prompt = `Analyze these student questions from a tutoring session and generate a structured summary report for the tutor/PAL leader.
+
+Session Data (${questionsData.length} questions):
+${JSON.stringify(questionsData, null, 2)}
+
+Please provide a report in Markdown format with the following sections:
+1. **Main Topics Discussed**: Key themes and concepts covered.
+2. **Common Difficulties**: Concepts that students found most challenging (based on difficulty levels and question types).
+3. **Suggested Review Points**: What the tutor should review or clarify in the next session.
+4. **Engagement Overview**: Brief comment on the variety/depth of questions.
+
+Keep it concise and actionable.`;
+
+      const response = await axios.post(
+        this.apiUrl,
+        {
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert educational analyst creating a session summary for a tutor.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1000
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`
+          }
+        }
+      );
+
+      return response.data.choices[0].message.content;
+    } catch (error: any) {
+      console.error('Session summary generation error:', error.message);
+      return 'Failed to generate session summary due to an AI service error.';
+    }
+  }
 }
 
 export default new AIRankingService();
