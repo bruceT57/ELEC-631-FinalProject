@@ -175,6 +175,11 @@ class ApiService {
     return response.data;
   }
 
+  async generateSessionSummary(spaceId: string): Promise<{ summary: string }> {
+    const response = await this.api.post(`/spaces/${spaceId}/summary`);
+    return response.data;
+  }
+
   async getPostStatistics(spaceId: string): Promise<{ statistics: any }> {
     const response = await this.api.get(`/posts/space/${spaceId}/statistics`);
     return response.data;

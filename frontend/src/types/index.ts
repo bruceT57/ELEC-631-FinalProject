@@ -39,6 +39,7 @@ export interface VirtualSpace {
   endTime: string;
   status: SpaceStatus;
   participants: User[];
+  aiSessionSummary?: string; // AI-generated summary
   createdAt: string;
   updatedAt: string;
 }

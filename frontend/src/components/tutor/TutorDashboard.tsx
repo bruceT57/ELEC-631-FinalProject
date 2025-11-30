@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { VirtualSpace } from '../../types';
 import apiService from '../../services/api';
 import PostList from '../student/PostList';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import './Tutor.css';
 
 const TutorDashboard: React.FC = () => {
@@ -11,9 +13,14 @@ const TutorDashboard: React.FC = () => {
   const [selectedSpace, setSelectedSpace] = useState<VirtualSpace | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [knowledgeSummary, setKnowledgeSummary] = useState('');
+  const [sessionSummary, setSessionSummary] = useState(''); // Store full AI summary
+  const [generatingSummary, setGeneratingSummary] = useState(false);
   const [statistics, setStatistics] = useState<any>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
+  
+  const reportRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -48,13 +55,20 @@ const TutorDashboard: React.FC = () => {
     setDetailsLoading(true);
     setDetailsError('');
     setKnowledgeSummary('');
+    setSessionSummary(''); // Reset summary
     setStatistics(null);
 
     try {
+      // Fetch basic details first
       const [summaryData, statsData] = await Promise.all([
         apiService.getKnowledgeSummary(selectedSpace._id),
         apiService.getPostStatistics(selectedSpace._id)
       ]);
+
+      // Check if space already has a saved summary
+      if (selectedSpace.aiSessionSummary) {
+        setSessionSummary(selectedSpace.aiSessionSummary);
+      }
 
       // Handle knowledge summary - could be array or string
       if (Array.isArray(summaryData.summary)) {
@@ -81,6 +95,44 @@ const TutorDashboard: React.FC = () => {
       setDetailsError(err.response?.data?.error || 'Failed to load space details');
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!selectedSpace) return;
+    setGeneratingSummary(true);
+    try {
+      const { summary } = await apiService.generateSessionSummary(selectedSpace._id);
+      setSessionSummary(summary);
+      // Update local space state to reflect the new summary
+      setSpaces(prev => prev.map(s => s._id === selectedSpace._id ? { ...s, aiSessionSummary: summary } : s));
+    } catch (err: any) {
+      setDetailsError(err.response?.data?.error || 'Failed to generate session summary');
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current || !selectedSpace) return;
+
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2, // Higher scale for better quality
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Session_Report_${selectedSpace.name}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+      setDetailsError('Failed to export PDF report');
     }
   };
 
@@ -273,6 +325,85 @@ const TutorDashboard: React.FC = () => {
                   />
                 </div>
               )}
+
+              <div className="session-summary-section" style={{ margin: '20px 0', padding: '25px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '24px' }}>🤖</span>
+                    <h3 style={{ margin: 0, color: '#333' }}>AI Session Report</h3>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {sessionSummary && (
+                      <button
+                        onClick={handleExportPDF}
+                        className="btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        📄 Export PDF
+                      </button>
+                    )}
+                    <button 
+                      onClick={handleGenerateSummary} 
+                      disabled={generatingSummary}
+                      className="btn-primary"
+                      style={{ 
+                        backgroundColor: generatingSummary ? '#9575cd' : '#673ab7',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '5px',
+                        boxShadow: '0 2px 5px rgba(103, 58, 183, 0.3)'
+                      }}
+                    >
+                      {generatingSummary ? '🔮 Analyzing...' : (sessionSummary ? '🔄 Regenerate' : '✨ Generate Report')}
+                    </button>
+                  </div>
+                </div>
+
+                {sessionSummary ? (
+                  <div 
+                    ref={reportRef} 
+                    className="ai-report-content" 
+                    style={{ 
+                      backgroundColor: '#fafafa', 
+                      padding: '30px', 
+                      borderRadius: '8px', 
+                      border: '1px solid #e0e0e0',
+                      lineHeight: '1.6',
+                      color: '#444'
+                    }}
+                  >
+                    <div style={{ marginBottom: '20px', textAlign: 'center', borderBottom: '2px solid #673ab7', paddingBottom: '10px' }}>
+                      <h2 style={{ color: '#673ab7', margin: '0 0 5px 0' }}>Session Summary Report</h2>
+                      <p style={{ margin: 0, color: '#666', fontSize: '0.9em' }}>
+                        Space: {selectedSpace.name} | Date: {new Date().toLocaleDateString()}
+                      </p>
+                    </div>
+                    
+                     {/* Enhanced markdown rendering */}
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: sessionSummary
+                        .replace(/\n/g, '<br/>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #2c3e50; font-weight: 600;">$1</strong>')
+                        .replace(/^# (.*$)/gim, '<h1 style="color: #673ab7; border-bottom: 1px solid #ddd; padding-bottom: 5px;">$1</h1>')
+                        .replace(/^## (.*$)/gim, '<h2 style="color: #5e35b1; margin-top: 20px;">$1</h2>')
+                        .replace(/^- (.*$)/gim, '<li style="margin-left: 20px;">$1</li>')
+                    }} />
+                  </div>
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '40px', 
+                    backgroundColor: '#f9f9f9', 
+                    borderRadius: '8px',
+                    border: '1px dashed #ccc' 
+                  }}>
+                    <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px', opacity: 0.5 }}>📊</span>
+                    <p style={{ color: '#666', fontStyle: 'italic', margin: 0 }}>
+                      Ready to analyze student questions. Click "Generate Report" to identify main topics, common misconceptions, and review suggestions.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <PostList spaceId={selectedSpace._id} isStudent={false} />
             </>
