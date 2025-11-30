@@ -1,0 +1,39 @@
+{
+  "name": "tutoring-tool",
+  "version": "1.0.0",
+  "description": "Online tutoring platform with AI-powered Q&A and multi-modal input",
+  "private": true,
+  "main": "production-server.js",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../gateway && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:gateway": "cd gateway && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:gateway": "cd gateway && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:all": "npm run build:backend && npm run build:gateway && npm run build:frontend",
+    "build:production": "npm run build:backend && npm run build:frontend",
+    "start:production": "node production-server.js",
+    "deploy:prepare": "npm run install-all && npm run build:production"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": [
+    "tutoring",
+    "education",
+    "ai",
+    "qr-code",
+    "ocr",
+    "voice-recognition"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

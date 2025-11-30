@@ -1,0 +1,156 @@
+/* Tutor Dashboard Specific Styles */
+
+.create-space-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.create-space-form {
+  margin-top: 15px;
+}
+
+.create-space-form .form-group {
+  margin-bottom: 15px;
+}
+
+.create-space-form label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+  font-weight: 500;
+}
+
+.create-space-form input,
+.create-space-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.participant-count {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.qr-code-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+  text-align: center;
+}
+
+.qr-code-section h4 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.qr-code {
+  max-width: 250px;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.space-code-display {
+  margin-top: 15px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+  letter-spacing: 2px;
+}
+
+.space-time {
+  font-size: 14px;
+  color: #666;
+  margin-top: 10px;
+}
+
+/* Statistics Panel */
+
+.statistics-panel {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.statistics-panel h3 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Knowledge Summary */
+
+.knowledge-summary {
+  background: #e3f2fd;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  border-left: 4px solid #2196f3;
+}
+
+.knowledge-summary h3 {
+  margin-bottom: 15px;
+  color: #1565c0;
+}
+
+.summary-content {
+  color: #333;
+  line-height: 1.8;
+}
+
+.summary-content strong {
+  color: #1976d2;
+}
+
+/* Responsive Grid for Tutor */
+.tutor-dashboard .space-header {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 30px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .tutor-dashboard .space-header {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-code-section {
+    order: -1;
+  }
+}
