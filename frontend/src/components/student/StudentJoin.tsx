@@ -221,11 +221,11 @@ const StudentJoin: React.FC = () => {
           </div>
 
           <div className="questions-list">
-            <h3>Questions in this Session</h3>
             <PostList
               spaceId={space._id}
               sessionToken={sessionToken}
               isStudent={true}
+              participantId={participantId}
             />
           </div>
         </div>

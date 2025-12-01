@@ -39,6 +39,7 @@ export interface VirtualSpace {
   endTime: string;
   status: SpaceStatus;
   participants: User[];
+  participantCount?: number; // Actual count from StudentParticipant collection
   aiSessionSummary?: string; // AI-generated summary
   createdAt: string;
   updatedAt: string;
@@ -73,10 +74,18 @@ export interface MediaAttachment {
   originalName: string;
 }
 
+export interface StudentComment {
+  participantId: string;
+  nickname: string;
+  comment: string;
+  timestamp: string;
+}
+
 export interface Post {
   _id: string;
   spaceId: string | VirtualSpace;
-  studentId: User;
+  studentId: User | string;
+  studentNickname?: string; // For anonymous students
   question: string;
   inputType: InputType;
   originalText?: string;
@@ -86,6 +95,7 @@ export interface Post {
   knowledgePoints: KnowledgePoint[];
   aiHint?: string; // AI-generated hint for tutor
   keyConceptsDefinitions?: { term: string; definition: string }[];
+  studentComments?: StudentComment[]; // Student-to-student responses
   tutorResponse?: string;
   isAnswered: boolean;
   answeredAt?: string;

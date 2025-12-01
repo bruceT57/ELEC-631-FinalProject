@@ -39,6 +39,16 @@ export interface IKnowledgePoint {
 }
 
 /**
+ * Student comment interface
+ */
+export interface IStudentComment {
+  participantId: string;
+  nickname: string;
+  comment: string;
+  timestamp: Date;
+}
+
+/**
  * Post interface extending Mongoose Document
  */
 export interface IPost extends Document {
@@ -54,6 +64,7 @@ export interface IPost extends Document {
   knowledgePoints: IKnowledgePoint[];
   aiHint?: string; // AI-generated hint/overview for tutors
   keyConceptsDefinitions?: { term: string; definition: string }[]; // AI-generated definitions
+  studentComments: IStudentComment[]; // Student-to-student responses
   tutorResponse?: string;
   isAnswered: boolean;
   answeredAt?: Date;
@@ -62,6 +73,7 @@ export interface IPost extends Document {
   updatedAt: Date;
   markAsAnswered(tutorId: mongoose.Types.ObjectId, response: string): void;
   updateDifficultyRanking(level: DifficultyLevel, score: number): void;
+  addStudentComment(participantId: string, nickname: string, comment: string): void;
 }
 
 /**
@@ -137,6 +149,14 @@ const PostSchema: Schema = new Schema(
         definition: { type: String, required: true }
       }
     ],
+    studentComments: [
+      {
+        participantId: { type: String, required: true },
+        nickname: { type: String, required: true },
+        comment: { type: String, required: true, maxlength: 1000 },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ],
     tutorResponse: {
       type: String,
       trim: true,
@@ -181,6 +201,22 @@ PostSchema.methods.updateDifficultyRanking = function (
 ): void {
   this.difficultyLevel = level;
   this.difficultyScore = score;
+};
+
+/**
+ * Method to add student comment
+ */
+PostSchema.methods.addStudentComment = function (
+  participantId: string,
+  nickname: string,
+  comment: string
+): void {
+  this.studentComments.push({
+    participantId,
+    nickname,
+    comment,
+    timestamp: new Date()
+  });
 };
 
 /**

@@ -82,10 +82,40 @@ class App {
     this.app.use('/api/archives', archiveRoutes);
     this.app.use('/api/admin', adminRoutes);
 
-    // 404 handler
-    this.app.use((req: Request, res: Response) => {
-      res.status(404).json({ error: 'Route not found' });
-    });
+    // Serve frontend static files in production
+    if (config.nodeEnv === 'production') {
+      const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+      const fs = require('fs');
+
+      // Check if frontend dist exists
+      if (fs.existsSync(frontendDistPath)) {
+        console.log(`✓ Serving frontend from: ${frontendDistPath}`);
+
+        // Serve static files
+        this.app.use(express.static(frontendDistPath));
+
+        // Handle client-side routing - serve index.html for all non-API routes
+        this.app.get('*', (req: Request, res: Response) => {
+          res.sendFile(path.join(frontendDistPath, 'index.html'));
+        });
+      } else {
+        console.warn(`⚠ Frontend dist not found at: ${frontendDistPath}`);
+        console.warn(`⚠ Please build frontend or upload dist folder to server`);
+
+        // 404 handler for non-API routes
+        this.app.use((req: Request, res: Response) => {
+          res.status(404).json({
+            error: 'Frontend not found. Please build and upload frontend dist folder.',
+            path: frontendDistPath
+          });
+        });
+      }
+    } else {
+      // In development, just return 404 for non-API routes
+      this.app.use((req: Request, res: Response) => {
+        res.status(404).json({ error: 'Route not found' });
+      });
+    }
   }
 
   /**

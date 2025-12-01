@@ -132,15 +132,35 @@ class VirtualSpaceService {
   public async getSpacesByTutor(
     tutorId: string,
     status?: SpaceStatus
-  ): Promise<IVirtualSpace[]> {
+  ): Promise<any[]> {
     const query: any = { tutorId };
     if (status) {
       query.status = status;
     }
 
-    return VirtualSpace.find(query)
+    const spaces = await VirtualSpace.find(query)
       .populate('participants', '-password')
       .sort({ createdAt: -1 });
+
+    // For each space, get the actual participant count from StudentParticipant collection
+    const StudentParticipant = (await import('../models/StudentParticipant')).default;
+
+    const spacesWithCount = await Promise.all(
+      spaces.map(async (space) => {
+        const participantCount = await StudentParticipant.countDocuments({
+          spaceId: space._id
+        });
+
+        // Convert to plain object and add participantCount
+        const spaceObj = space.toObject();
+        return {
+          ...spaceObj,
+          participantCount
+        };
+      })
+    );
+
+    return spacesWithCount;
   }
 
   /**

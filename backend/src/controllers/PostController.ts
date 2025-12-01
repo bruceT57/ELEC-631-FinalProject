@@ -292,6 +292,46 @@ class PostController {
       });
     }
   }
+
+  /**
+   * Add student comment to a post
+   */
+  public async addStudentComment(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { participantId, comment } = req.body;
+
+      if (!participantId || !comment) {
+        res.status(400).json({ error: 'Missing required fields' });
+        return;
+      }
+
+      // Get participant nickname
+      const StudentParticipant = (await import('../models/StudentParticipant')).default;
+      const participant = await StudentParticipant.findById(participantId);
+
+      if (!participant) {
+        res.status(404).json({ error: 'Participant not found' });
+        return;
+      }
+
+      const post = await PostService.addStudentComment(id, String(participant._id), participant.nickname, comment);
+
+      if (!post) {
+        res.status(404).json({ error: 'Post not found' });
+        return;
+      }
+
+      res.status(200).json({
+        message: 'Comment added successfully',
+        post
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        error: error.message || 'Failed to add comment'
+      });
+    }
+  }
 }
 
 export default new PostController();

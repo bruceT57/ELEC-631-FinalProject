@@ -6,15 +6,21 @@ interface PostListProps {
   spaceId: string;
   isStudent: boolean;
   sessionToken?: string; // For anonymous students
+  participantId?: string; // For student comments
+  onPostsUpdate?: () => void; // Callback for statistics refresh
 }
 
-const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
+const PostList: React.FC<PostListProps> = ({ spaceId, isStudent, participantId, onPostsUpdate }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [sortBy, setSortBy] = useState<'difficulty' | 'time'>('difficulty');
   const [loading, setLoading] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [tutorResponse, setTutorResponse] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Student comment state
+  const [commentText, setCommentText] = useState<{ [postId: string]: string }>({});
+  const [submittingComment, setSubmittingComment] = useState<{ [postId: string]: boolean }>({});
 
   useEffect(() => {
     loadPosts();
@@ -32,6 +38,11 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
     try {
       const { posts } = await apiService.getPostsBySpace(spaceId, sortBy);
       setPosts(posts);
+
+      // Trigger callback for statistics refresh
+      if (onPostsUpdate) {
+        onPostsUpdate();
+      }
     } catch (err) {
       console.error('Failed to load posts:', err);
     } finally {
@@ -52,6 +63,22 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
       console.error('Failed to answer post:', err);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAddComment = async (postId: string) => {
+    const comment = commentText[postId]?.trim();
+    if (!comment || !participantId) return;
+
+    setSubmittingComment({ ...submittingComment, [postId]: true });
+    try {
+      await apiService.addStudentComment(postId, participantId, comment);
+      setCommentText({ ...commentText, [postId]: '' });
+      await loadPosts(false); // Reload without spinner
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+    } finally {
+      setSubmittingComment({ ...submittingComment, [postId]: false });
     }
   };
 
@@ -90,7 +117,7 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
             <div className="post-header">
               <div className="post-author">
                 <strong>
-                  {post.studentId.firstName} {post.studentId.lastName}
+                  {post.studentNickname || (typeof post.studentId !== 'string' ? `${post.studentId.firstName} ${post.studentId.lastName}` : 'Student')}
                 </strong>
                 <span className="post-time">
                   {new Date(post.createdAt).toLocaleString()}
@@ -212,6 +239,44 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
               </div>
             ) : (
               <div className="unanswered-badge">Waiting for tutor response...</div>
+            )}
+
+            {/* Student Comments Section */}
+            {isStudent && post.studentComments && post.studentComments.length > 0 && (
+              <div className="student-comments-section">
+                <h4>Student Responses:</h4>
+                {post.studentComments.map((comment, idx) => (
+                  <div key={idx} className="student-comment">
+                    <div className="comment-header">
+                      <strong>{comment.nickname}</strong>
+                      <span className="comment-time">
+                        {new Date(comment.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="comment-text">{comment.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Comment Section for Students */}
+            {isStudent && participantId && (
+              <div className="add-comment-section">
+                <textarea
+                  value={commentText[post._id] || ''}
+                  onChange={(e) => setCommentText({ ...commentText, [post._id]: e.target.value })}
+                  placeholder="Share your thoughts or help with this question..."
+                  rows={2}
+                  className="comment-textarea"
+                />
+                <button
+                  onClick={() => handleAddComment(post._id)}
+                  disabled={submittingComment[post._id] || !commentText[post._id]?.trim()}
+                  className="btn-secondary btn-comment"
+                >
+                  {submittingComment[post._id] ? 'Posting...' : 'Add Response'}
+                </button>
+              </div>
             )}
           </div>
         ))

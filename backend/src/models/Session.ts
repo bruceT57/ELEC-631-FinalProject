@@ -80,15 +80,16 @@ const SessionSchema: Schema = new Schema(
  */
 SessionSchema.methods.calculateStatistics = async function (): Promise<ISessionStatistics> {
   const Post = mongoose.model('Post');
-  const VirtualSpace = mongoose.model('VirtualSpace');
+  const StudentParticipant = mongoose.model('StudentParticipant');
 
   const posts = await Post.find({ spaceId: this.spaceId });
-  const space = await VirtualSpace.findById(this.spaceId);
+
+  // Count unique participants using StudentParticipant model
+  const participantCount = await StudentParticipant.countDocuments({ spaceId: this.spaceId });
 
   const totalPosts = posts.length;
   const answeredPosts = posts.filter((p: any) => p.isAnswered).length;
   const unansweredPosts = totalPosts - answeredPosts;
-  const participantCount = space ? space.participants.length : 0;
 
   const totalScore = posts.reduce((sum: number, p: any) => sum + p.difficultyScore, 0);
   const averageDifficultyScore = totalPosts > 0 ? totalScore / totalPosts : 0;
@@ -110,7 +111,10 @@ SessionSchema.methods.calculateStatistics = async function (): Promise<ISessionS
 SessionSchema.methods.archiveSession = function (data: any): void {
   this.isArchived = true;
   this.archivedAt = new Date();
-  this.actualEndTime = new Date();
+  // Only set actualEndTime if not already set (prevents time from changing on re-save)
+  if (!this.actualEndTime) {
+    this.actualEndTime = new Date();
+  }
   this.archivedData = data;
 };
 

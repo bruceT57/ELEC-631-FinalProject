@@ -200,6 +200,22 @@ class PostService {
       byLevel: byLevel.map((r: any) => ({ level: r._id, count: r.count })),
     };
   }
+
+  /** Add student comment to a post */
+  public async addStudentComment(
+    postId: string,
+    participantId: string,
+    nickname: string,
+    comment: string
+  ) {
+    const post = await Post.findById(postId);
+    if (!post) return null;
+
+    post.addStudentComment(participantId, nickname, comment);
+    await post.save();
+
+    return post.populate('studentId', '-password');
+  }
 }
 
 export default new PostService();

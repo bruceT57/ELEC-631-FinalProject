@@ -100,6 +100,7 @@ class ArchivingService {
         posts: posts.map((post) => ({
           question: post.question,
           student: post.studentId,
+          studentNickname: post.studentNickname, // Include student nickname for display
           inputType: post.inputType,
           difficultyLevel: post.difficultyLevel,
           difficultyScore: post.difficultyScore,

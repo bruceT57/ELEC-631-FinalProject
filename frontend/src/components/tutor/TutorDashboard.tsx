@@ -98,6 +98,24 @@ const TutorDashboard: React.FC = () => {
     }
   };
 
+  const refreshStatistics = async () => {
+    if (!selectedSpace) return;
+    try {
+      const statsData = await apiService.getPostStatistics(selectedSpace._id);
+      if (statsData.statistics) {
+        const stats = statsData.statistics;
+        setStatistics({
+          total: stats.total || 0,
+          answered: stats.answered || 0,
+          unanswered: stats.unanswered || 0,
+          averageScore: stats.avgDifficulty || stats.averageScore || 0
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh statistics:', err);
+    }
+  };
+
   const handleGenerateSummary = async () => {
     if (!selectedSpace) return;
     setGeneratingSummary(true);
@@ -254,7 +272,7 @@ const TutorDashboard: React.FC = () => {
                   <h4>{space.name}</h4>
                   <p className="space-code">Code: {space.spaceCode}</p>
                   <p className="participant-count">
-                    Participants: {space.participants.length}
+                    Participants: {space.participantCount ?? 0}
                   </p>
                   <span className={`status-badge ${space.status}`}>{space.status}</span>
                 </div>
@@ -406,7 +424,11 @@ const TutorDashboard: React.FC = () => {
                 )}
               </div>
 
-              <PostList spaceId={selectedSpace._id} isStudent={false} />
+              <PostList
+                spaceId={selectedSpace._id}
+                isStudent={false}
+                onPostsUpdate={refreshStatistics}
+              />
             </>
           ) : (
             <div className="empty-state-main">

@@ -109,4 +109,7 @@ router.get(
   PostController.getStatistics
 );
 
+// POST /api/posts/:id/comment - Add student comment to post
+router.post('/:id/comment', optionalAuth, PostController.addStudentComment);
+
 export default router;

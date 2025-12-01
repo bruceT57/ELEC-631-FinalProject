@@ -185,6 +185,11 @@ class ApiService {
     return response.data;
   }
 
+  async addStudentComment(postId: string, participantId: string, comment: string): Promise<{ post: Post }> {
+    const response = await this.api.post(`/posts/${postId}/comment`, { participantId, comment });
+    return response.data;
+  }
+
   /**
    * Archive APIs
    */

@@ -124,8 +124,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, participantId, session
 
   return (
     <div className="create-post">
-      <h3>Ask a Question</h3>
-
       {error && <div className="error-message">{error}</div>}
       {ocrProgress && <div className="info-message">{ocrProgress}</div>}
 
@@ -182,7 +180,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, participantId, session
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Your question here..."
-            rows={5}
+            rows={10}
             disabled={loading}
             required
           />
