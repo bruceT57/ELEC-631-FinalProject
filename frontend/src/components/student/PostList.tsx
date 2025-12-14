@@ -241,8 +241,8 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent, participantId, 
               <div className="unanswered-badge">Waiting for tutor response...</div>
             )}
 
-            {/* Student Comments Section */}
-            {isStudent && post.studentComments && post.studentComments.length > 0 && (
+            {/* Student Comments Section - Visible to EVERYONE (students, tutors, admins) */}
+            {post.studentComments && post.studentComments.length > 0 && (
               <div className="student-comments-section">
                 <h4>Student Responses:</h4>
                 {post.studentComments.map((comment, idx) => (
@@ -259,7 +259,7 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent, participantId, 
               </div>
             )}
 
-            {/* Add Comment Section for Students */}
+            {/* Add Comment Section - ONLY for Students */}
             {isStudent && participantId && (
               <div className="add-comment-section">
                 <textarea

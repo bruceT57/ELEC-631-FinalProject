@@ -50,6 +50,33 @@ const StudentJoin: React.FC = () => {
     loadSpace();
   }, [spaceCode]);
 
+  // Poll for session status every 30 seconds to auto-kick if archived
+  useEffect(() => {
+    if (!isJoined) return;
+
+    const checkSessionStatus = async () => {
+      try {
+        const { space } = await apiService.getSpaceByCode(spaceCode || '');
+
+        // If session is no longer active, kick the student out
+        if (space.status !== 'active') {
+          handleLeave();
+          setError('This session has ended and is no longer active.');
+        }
+      } catch (err) {
+        console.error('Failed to check session status:', err);
+      }
+    };
+
+    // Check immediately
+    checkSessionStatus();
+
+    // Then check every 30 seconds
+    const intervalId = setInterval(checkSessionStatus, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [isJoined, spaceCode]);
+
   const loadSpace = async () => {
     try {
       setLoading(true);
@@ -140,12 +167,47 @@ const StudentJoin: React.FC = () => {
     );
   }
 
+  // Check if space is archived or expired - show proper message
+  if (space.status !== 'active') {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1>Lumina</h1>
+          <h2>Session Ended</h2>
+          <div className="info-message" style={{
+            padding: '20px',
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: '8px',
+            marginTop: '20px',
+            textAlign: 'center'
+          }}>
+            <p style={{ fontSize: '18px', marginBottom: '10px' }}>⏰</p>
+            <p style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>
+              This session has ended
+            </p>
+            <p style={{ fontSize: '14px', color: '#856404', marginBottom: '15px' }}>
+              The tutoring session "{space.name}" is no longer active.
+            </p>
+            <div style={{ fontSize: '13px', color: '#666', borderTop: '1px solid #ffc107', paddingTop: '15px' }}>
+              <p><strong>Tutor:</strong> {space.tutorId.firstName} {space.tutorId.lastName}</p>
+              <p style={{ marginTop: '5px' }}><strong>Status:</strong> {space.status === 'archived' ? 'Archived' : 'Expired'}</p>
+            </div>
+          </div>
+          <p style={{ marginTop: '20px', fontSize: '14px', color: '#666', textAlign: 'center' }}>
+            Please contact your tutor if you need to access this session.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // If not joined yet, show join form
   if (!isJoined) {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <h1>Rice OASUS Tutoring Tool</h1>
+          <h1>Lumina</h1>
           <h2>Join: {space.name}</h2>
 
           {space.description && <p className="space-description">{space.description}</p>}
@@ -198,7 +260,7 @@ const StudentJoin: React.FC = () => {
     <div className="dashboard">
       <header className="dashboard-header">
         <div>
-          <h1>Rice OASUS Tutoring Tool</h1>
+          <h1>Lumina</h1>
           <h2>{space.name}</h2>
         </div>
         <div className="user-info">

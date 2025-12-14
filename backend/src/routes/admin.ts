@@ -65,4 +65,28 @@ router.put(
   AdminController.resetPassword
 );
 
+// GET /api/admin/users/pending/list - Get pending users
+router.get(
+  '/users/pending/list',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.ADMIN),
+  AdminController.getPendingUsers
+);
+
+// PUT /api/admin/users/:id/approve - Approve a pending user
+router.put(
+  '/users/:id/approve',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.ADMIN),
+  AdminController.approveUser
+);
+
+// DELETE /api/admin/users/:id/reject - Reject a pending user
+router.delete(
+  '/users/:id/reject',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.ADMIN),
+  AdminController.rejectUser
+);
+
 export default router;

@@ -15,6 +15,7 @@ const Register: React.FC = () => {
     role: UserRole.TUTOR
   });
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +34,7 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setFieldErrors({});
 
     if (formData.password !== formData.confirmPassword) {
@@ -55,7 +57,7 @@ const Register: React.FC = () => {
         return;
       }
 
-      // Redirect based on role from registered user
+      // Redirect based on role from registered user (only for students)
       if (registeredUser?.role === UserRole.STUDENT) {
         navigate('/student/dashboard');
       } else if (registeredUser?.role === UserRole.TUTOR) {
@@ -64,6 +66,24 @@ const Register: React.FC = () => {
         navigate('/admin/dashboard');
       }
     } catch (err: any) {
+      // Check if this is an approval-required error
+      if (err.requiresApproval) {
+        setSuccessMessage(err.message || 'Registration successful! Your account is pending approval. An administrator will review your request shortly.');
+        setLoading(false);
+        // Clear the form
+        setFormData({
+          username: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.TUTOR
+        });
+        return;
+      }
+
+      // Handle other errors
       const errorData = err.response?.data;
       if (errorData?.details) {
         setFieldErrors(errorData.details);
@@ -78,9 +98,19 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Rice OASUS Tutoring Tool</h1>
+        <h1>Lumina</h1>
 
         {error && <div className="error-message">{error}</div>}
+        {successMessage && (
+          <div className="success-message">
+            {successMessage}
+            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+              <a href="/login" style={{ color: 'white', textDecoration: 'underline' }}>
+                Return to Login
+              </a>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-row">

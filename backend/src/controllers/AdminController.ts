@@ -101,7 +101,8 @@ class AdminController {
         password,
         firstName,
         lastName,
-        role
+        role,
+        approved: true // Admin-created users are auto-approved
       });
 
       // Return user without password
@@ -279,6 +280,116 @@ class AdminController {
       console.error('Error in getUserStatistics:', error);
       res.status(500).json({
         error: error.message || 'Failed to get user statistics'
+      });
+    }
+  }
+
+  /**
+   * Get pending users (not yet approved)
+   */
+  public async getPendingUsers(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const pendingUsers = await User.find({
+        approved: false,
+        role: { $in: [UserRole.TUTOR, UserRole.ADMIN] }
+      })
+        .select('-password')
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({ pendingUsers });
+    } catch (error: any) {
+      console.error('Error in getPendingUsers:', error);
+      res.status(500).json({
+        error: error.message || 'Failed to get pending users'
+      });
+    }
+  }
+
+  /**
+   * Approve a pending user
+   */
+  public async approveUser(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+
+      const user = await User.findById(id);
+
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      if (user.approved) {
+        res.status(400).json({ error: 'User is already approved' });
+        return;
+      }
+
+      user.approved = true;
+      await user.save();
+
+      res.status(200).json({
+        message: 'User approved successfully',
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          approved: user.approved
+        }
+      });
+    } catch (error: any) {
+      console.error('Error in approveUser:', error);
+      res.status(500).json({
+        error: error.message || 'Failed to approve user'
+      });
+    }
+  }
+
+  /**
+   * Reject a pending user (delete their account)
+   */
+  public async rejectUser(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+
+      const user = await User.findById(id);
+
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      if (user.approved) {
+        res.status(400).json({ error: 'Cannot reject an already approved user. Use delete instead.' });
+        return;
+      }
+
+      await User.findByIdAndDelete(id);
+
+      res.status(200).json({
+        message: 'User rejected and deleted successfully'
+      });
+    } catch (error: any) {
+      console.error('Error in rejectUser:', error);
+      res.status(500).json({
+        error: error.message || 'Failed to reject user'
       });
     }
   }

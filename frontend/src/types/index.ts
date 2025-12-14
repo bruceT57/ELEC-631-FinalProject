@@ -15,6 +15,7 @@ export interface User {
   role: UserRole;
   firstName: string;
   lastName: string;
+  approved?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -148,6 +149,7 @@ export interface RegisterData {
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  token?: string;
   message: string;
+  requiresApproval?: boolean;
 }

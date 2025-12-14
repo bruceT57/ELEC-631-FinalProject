@@ -60,6 +60,11 @@ class AuthService {
     const ok = await bcrypt.compare(password, (userDoc as any).password || '');
     if (!ok) throw new Error('Invalid credentials');
 
+    // Check if user is approved
+    if (!(userDoc as any).approved) {
+      throw new Error('Your account is pending approval. Please wait for an administrator to approve your account.');
+    }
+
     const userId = (userDoc as any)._id?.toString?.() ?? String((userDoc as any)._id);
 
     const safeUser = {

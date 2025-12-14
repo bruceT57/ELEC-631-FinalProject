@@ -77,10 +77,28 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
       email,
       password, // hashed via pre-save hook
       role: role || UserRole.STUDENT,
+      approved: (role === UserRole.TUTOR || role === UserRole.ADMIN) ? false : true, // Tutors/Admins need approval
     });
 
     console.log(`[Auth] User created - Role in DB: ${user.role}`);
 
+    // For tutors and admins, they cannot login until approved
+    if (user.role === UserRole.TUTOR || user.role === UserRole.ADMIN) {
+      return res.status(201).json({
+        message: 'Registration successful! Your account is pending approval. An administrator will review your request shortly.',
+        requiresApproval: true,
+        user: {
+          id: docId(user),
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
+    }
+
+    // Students can login immediately
     const token = signToken(user);
 
     return res.status(201).json({
@@ -162,6 +180,15 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const ok = await user.comparePassword(password);
     if (!ok) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if user is approved (for TUTOR and ADMIN roles)
+    // Only block if approved is explicitly false (new pending users)
+    // Allow undefined (existing users) and true (approved users)
+    if ((user.role === UserRole.TUTOR || user.role === UserRole.ADMIN) && user.approved === false) {
+      return res.status(403).json({
+        error: 'Your account is pending approval. Please wait for an administrator to approve your account before logging in.'
+      });
     }
 
     const token = signToken(user);

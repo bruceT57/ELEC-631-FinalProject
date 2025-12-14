@@ -96,6 +96,7 @@ class ArchivingService {
           participants: space.participants,
           startTime: space.startTime,
           endTime: space.endTime,
+          aiSessionSummary: space.aiSessionSummary, // Include AI session summary
         },
         posts: posts.map((post) => ({
           question: post.question,
@@ -105,6 +106,10 @@ class ArchivingService {
           difficultyLevel: post.difficultyLevel,
           difficultyScore: post.difficultyScore,
           knowledgePoints: post.knowledgePoints,
+          mediaAttachments: post.mediaAttachments, // Include media attachments
+          aiHint: post.aiHint, // Include AI hint
+          keyConceptsDefinitions: post.keyConceptsDefinitions, // Include key concepts
+          studentComments: post.studentComments, // Include student-to-student comments
           isAnswered: post.isAnswered,
           tutorResponse: post.tutorResponse,
           answeredBy: post.answeredBy,

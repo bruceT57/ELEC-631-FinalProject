@@ -1,7 +1,7 @@
 {
-  "name": "tutoring-tool-backend",
+  "name": "lumina-backend",
   "version": "1.0.0",
-  "description": "Backend for online tutoring tool",
+  "description": "Backend for Lumina",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",

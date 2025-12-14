@@ -15,6 +15,9 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  approved: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -58,6 +61,11 @@ const UserSchema = new Schema<IUser>(
       enum: Object.values(UserRole),
       default: UserRole.STUDENT, // default aligns with routes using STUDENT/TUTOR/ADMIN
       required: true,
+      index: true,
+    },
+    approved: {
+      type: Boolean,
+      default: true, // Existing users are pre-approved
       index: true,
     },
   },

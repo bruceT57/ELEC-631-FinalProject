@@ -258,6 +258,21 @@ class ApiService {
     const response = await this.api.get('/admin/users/statistics');
     return response.data;
   }
+
+  async getPendingUsers(): Promise<{ pendingUsers: User[] }> {
+    const response = await this.api.get('/admin/users/pending/list');
+    return response.data;
+  }
+
+  async approveUser(userId: string): Promise<{ user: User; message: string }> {
+    const response = await this.api.put(`/admin/users/${userId}/approve`);
+    return response.data;
+  }
+
+  async rejectUser(userId: string): Promise<{ message: string }> {
+    const response = await this.api.delete(`/admin/users/${userId}/reject`);
+    return response.data;
+  }
 }
 
 export default new ApiService();
