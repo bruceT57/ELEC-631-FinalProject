@@ -1,3 +1,46 @@
+<<<<<<< HEAD
+=======
+// Type declarations for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  readonly isFinal: boolean;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  readonly transcript: string;
+  readonly confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  start(): void;
+  stop(): void;
+}
+
+declare var SpeechRecognition: {
+  prototype: SpeechRecognition;
+  new (): SpeechRecognition;
+};
+
+>>>>>>> ai_feature_clean
 /**
  * Voice Recognition Service class using Web Speech API
  */
@@ -7,6 +50,7 @@ class VoiceRecognitionService {
 
   constructor() {
     // Check for browser support
+<<<<<<< HEAD
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -15,6 +59,17 @@ class VoiceRecognitionService {
       this.recognition.continuous = false;
       this.recognition.interimResults = false;
       this.recognition.lang = 'en-US';
+=======
+    const SpeechRecognitionConstructor =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (SpeechRecognitionConstructor) {
+      this.recognition = new SpeechRecognitionConstructor();
+      // Configure recognition settings (non-null assertion safe here since we just created it)
+      this.recognition!.continuous = false;
+      this.recognition!.interimResults = false;
+      this.recognition!.lang = 'en-US';
+>>>>>>> ai_feature_clean
     }
   }
 

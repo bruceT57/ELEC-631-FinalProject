@@ -2,6 +2,10 @@ import QRCode from 'qrcode';
 import { VirtualSpace, IVirtualSpace, SpaceStatus, Session } from '../models';
 import { randomBytes } from 'crypto';
 import config from '../config/config';
+<<<<<<< HEAD
+=======
+import AIRankingService from './AIRankingService';
+>>>>>>> ai_feature_clean
 
 /**
  * Virtual Space creation data interface
@@ -131,15 +135,45 @@ class VirtualSpaceService {
   public async getSpacesByTutor(
     tutorId: string,
     status?: SpaceStatus
+<<<<<<< HEAD
   ): Promise<IVirtualSpace[]> {
+=======
+  ): Promise<any[]> {
+>>>>>>> ai_feature_clean
     const query: any = { tutorId };
     if (status) {
       query.status = status;
     }
 
+<<<<<<< HEAD
     return VirtualSpace.find(query)
       .populate('participants', '-password')
       .sort({ createdAt: -1 });
+=======
+    const spaces = await VirtualSpace.find(query)
+      .populate('participants', '-password')
+      .sort({ createdAt: -1 });
+
+    // For each space, get the actual participant count from StudentParticipant collection
+    const StudentParticipant = (await import('../models/StudentParticipant')).default;
+
+    const spacesWithCount = await Promise.all(
+      spaces.map(async (space) => {
+        const participantCount = await StudentParticipant.countDocuments({
+          spaceId: space._id
+        });
+
+        // Convert to plain object and add participantCount
+        const spaceObj = space.toObject();
+        return {
+          ...spaceObj,
+          participantCount
+        };
+      })
+    );
+
+    return spacesWithCount;
+>>>>>>> ai_feature_clean
   }
 
   /**
@@ -194,6 +228,30 @@ class VirtualSpaceService {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Generate AI session summary
+   */
+  public async generateSessionSummary(spaceId: string): Promise<string> {
+    // Load all posts for this space
+    const Post = (await import('../models')).Post;
+    const posts = await Post.find({ spaceId }).populate('knowledgePoints');
+
+    if (!posts || posts.length === 0) {
+      throw new Error('No posts found in this session to summarize.');
+    }
+
+    // Generate summary via AI
+    const summary = await AIRankingService.generateSessionSummary(posts);
+
+    // Save summary to VirtualSpace
+    await VirtualSpace.findByIdAndUpdate(spaceId, { aiSessionSummary: summary });
+
+    return summary;
+  }
+
+  /**
+>>>>>>> ai_feature_clean
    * Regenerate QR codes for all spaces (use this when IP address changes)
    */
   public async regenerateAllQRCodes(): Promise<number> {

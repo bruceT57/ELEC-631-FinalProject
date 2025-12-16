@@ -7,6 +7,7 @@ dotenv.config();
  * Get the local IP address of the machine
  */
 function getLocalIpAddress(): string {
+<<<<<<< HEAD
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
     const ifaces = interfaces[name];
@@ -19,6 +20,24 @@ function getLocalIpAddress(): string {
         }
       }
     }
+=======
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      const ifaces = interfaces[name];
+      if (ifaces) {
+        for (const iface of ifaces) {
+          // Skip internal and non-IPv4 addresses
+          if (iface.family === 'IPv4' && !iface.internal) {
+            console.log(`Found local IP: ${iface.address} (interface: ${name})`);
+            return iface.address;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Error detecting network interfaces:', error);
+>>>>>>> ai_feature_clean
   }
   console.warn('Could not detect local IP, falling back to localhost');
   return 'localhost';
@@ -39,7 +58,11 @@ class Config {
   public readonly localIpAddress: string;
 
   constructor() {
+<<<<<<< HEAD
     this.port = parseInt(process.env.PORT || '5000', 10);
+=======
+    this.port = parseInt(process.env.PORT || '5001', 10);
+>>>>>>> ai_feature_clean
     this.mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/tutoring-tool';
     this.jwtSecret = process.env.JWT_SECRET || 'default-secret-change-in-production';
     this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
@@ -61,10 +84,17 @@ class Config {
     if (isUsingDefaultFrontendUrl) {
       this.frontendUrl = `http://${this.localIpAddress}:3001`;
     }
+<<<<<<< HEAD
     
     console.log(`✓ Frontend URL (for QR codes): ${this.frontendUrl}`);
     console.log(`✓ Local IP Address: ${this.localIpAddress}`);
     
+=======
+
+    console.log(`✓ Frontend URL (for QR codes): ${this.frontendUrl}`);
+    console.log(`✓ Local IP Address: ${this.localIpAddress}`);
+
+>>>>>>> ai_feature_clean
     if (!this.jwtSecret || this.jwtSecret === 'default-secret-change-in-production') {
       console.warn('Warning: Using default JWT secret. Please set JWT_SECRET in production!');
     }

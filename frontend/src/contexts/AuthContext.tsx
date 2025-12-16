@@ -43,6 +43,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await apiService.login(credentials);
       const { user, token } = response;
 
+<<<<<<< HEAD
+=======
+      if (!token) {
+        throw new Error('Login failed: No token received');
+      }
+
+>>>>>>> ai_feature_clean
       setUser(user);
       setToken(token);
 
@@ -58,8 +65,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (data: RegisterData) => {
     try {
       const response = await apiService.register(data);
+<<<<<<< HEAD
       const { user, token } = response;
 
+=======
+
+      // Check if registration requires approval (for tutors and admins)
+      if (response.requiresApproval) {
+        // Throw a special error that the Register component can catch
+        const error: any = new Error(response.message || 'Your account is pending approval');
+        error.requiresApproval = true;
+        error.user = response.user;
+        throw error;
+      }
+
+      const { user, token } = response;
+
+      if (!token) {
+        throw new Error('Registration failed: No token received');
+      }
+
+>>>>>>> ai_feature_clean
       setUser(user);
       setToken(token);
 

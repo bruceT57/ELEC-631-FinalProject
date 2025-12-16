@@ -55,7 +55,11 @@ const StudentDashboard: React.FC = () => {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
+<<<<<<< HEAD
         <h1>Student Dashboard</h1>
+=======
+        <h1>Lumina - Student Dashboard</h1>
+>>>>>>> ai_feature_clean
         <div className="user-info">
           <span>Welcome, {user?.firstName}!</span>
           <button onClick={logout} className="btn-secondary">

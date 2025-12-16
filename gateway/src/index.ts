@@ -4,7 +4,11 @@ import morgan from "morgan";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+<<<<<<< HEAD
 const BACKEND = process.env.BACKEND_URL || "http://localhost:5000";
+=======
+const BACKEND = process.env.BACKEND_URL || "http://localhost:5001";
+>>>>>>> ai_feature_clean
 
 const app = express();
 

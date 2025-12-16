@@ -6,10 +6,19 @@ import voiceService from '../../utils/voiceService';
 
 interface CreatePostProps {
   spaceId: string;
+<<<<<<< HEAD
   onPostCreated: () => void;
 }
 
 const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
+=======
+  participantId?: string; // For anonymous students
+  sessionToken?: string; // For anonymous students
+  onPostCreated?: () => void;
+}
+
+const CreatePost: React.FC<CreatePostProps> = ({ spaceId, participantId, sessionToken, onPostCreated }) => {
+>>>>>>> ai_feature_clean
   const [inputMode, setInputMode] = useState<InputType>(InputType.TEXT);
   const [question, setQuestion] = useState('');
   const [originalText, setOriginalText] = useState('');
@@ -85,6 +94,15 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
       formData.append('question', question);
       formData.append('inputType', inputMode);
 
+<<<<<<< HEAD
+=======
+      // If anonymous student, include participant info
+      if (participantId && sessionToken) {
+        formData.append('participantId', participantId);
+        formData.append('sessionToken', sessionToken);
+      }
+
+>>>>>>> ai_feature_clean
       if (originalText) {
         formData.append('originalText', originalText);
       }
@@ -104,7 +122,13 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
         fileInputRef.current.value = '';
       }
 
+<<<<<<< HEAD
       onPostCreated();
+=======
+      if (onPostCreated) {
+        onPostCreated();
+      }
+>>>>>>> ai_feature_clean
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create post');
     } finally {
@@ -114,8 +138,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
 
   return (
     <div className="create-post">
+<<<<<<< HEAD
       <h3>Ask a Question</h3>
 
+=======
+>>>>>>> ai_feature_clean
       {error && <div className="error-message">{error}</div>}
       {ocrProgress && <div className="info-message">{ocrProgress}</div>}
 
@@ -172,7 +199,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ spaceId, onPostCreated }) => {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Your question here..."
+<<<<<<< HEAD
             rows={5}
+=======
+            rows={10}
+>>>>>>> ai_feature_clean
             disabled={loading}
             required
           />

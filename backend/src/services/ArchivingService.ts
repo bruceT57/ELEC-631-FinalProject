@@ -96,14 +96,29 @@ class ArchivingService {
           participants: space.participants,
           startTime: space.startTime,
           endTime: space.endTime,
+<<<<<<< HEAD
+=======
+          aiSessionSummary: space.aiSessionSummary, // Include AI session summary
+>>>>>>> ai_feature_clean
         },
         posts: posts.map((post) => ({
           question: post.question,
           student: post.studentId,
+<<<<<<< HEAD
+=======
+          studentNickname: post.studentNickname, // Include student nickname for display
+>>>>>>> ai_feature_clean
           inputType: post.inputType,
           difficultyLevel: post.difficultyLevel,
           difficultyScore: post.difficultyScore,
           knowledgePoints: post.knowledgePoints,
+<<<<<<< HEAD
+=======
+          mediaAttachments: post.mediaAttachments, // Include media attachments
+          aiHint: post.aiHint, // Include AI hint
+          keyConceptsDefinitions: post.keyConceptsDefinitions, // Include key concepts
+          studentComments: post.studentComments, // Include student-to-student comments
+>>>>>>> ai_feature_clean
           isAnswered: post.isAnswered,
           tutorResponse: post.tutorResponse,
           answeredBy: post.answeredBy,

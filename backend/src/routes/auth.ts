@@ -26,6 +26,10 @@ function signToken(user: IUser) {
     throw new Error('Server misconfiguration: missing JWT secret');
   }
   const sub = docId(user);
+<<<<<<< HEAD
+=======
+  console.log(`[Auth] Signing token for user ${user.username}, role: ${user.role}`);
+>>>>>>> ai_feature_clean
   return jwt.sign(
     {
       sub,
@@ -44,6 +48,10 @@ function signToken(user: IUser) {
  */
 router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
+<<<<<<< HEAD
+=======
+    console.log('[Auth] Register request body:', JSON.stringify(req.body, null, 2));
+>>>>>>> ai_feature_clean
     const body = (req.body && (req.body.user ?? req.body)) || {};
 
     const { firstName, lastName, username, email, password, role } = body as {
@@ -55,6 +63,11 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
       role?: string;
     };
 
+<<<<<<< HEAD
+=======
+    console.log(`[Auth] Parsed registration data - Role: ${role}`);
+
+>>>>>>> ai_feature_clean
     const missing = {
       firstName: !firstName,
       lastName: !lastName,
@@ -73,8 +86,33 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
       email,
       password, // hashed via pre-save hook
       role: role || UserRole.STUDENT,
+<<<<<<< HEAD
     });
 
+=======
+      approved: (role === UserRole.TUTOR || role === UserRole.ADMIN) ? false : true, // Tutors/Admins need approval
+    });
+
+    console.log(`[Auth] User created - Role in DB: ${user.role}`);
+
+    // For tutors and admins, they cannot login until approved
+    if (user.role === UserRole.TUTOR || user.role === UserRole.ADMIN) {
+      return res.status(201).json({
+        message: 'Registration successful! Your account is pending approval. An administrator will review your request shortly.',
+        requiresApproval: true,
+        user: {
+          id: docId(user),
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
+    }
+
+    // Students can login immediately
+>>>>>>> ai_feature_clean
     const token = signToken(user);
 
     return res.status(201).json({
@@ -158,6 +196,18 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+<<<<<<< HEAD
+=======
+    // Check if user is approved (for TUTOR and ADMIN roles)
+    // Only block if approved is explicitly false (new pending users)
+    // Allow undefined (existing users) and true (approved users)
+    if ((user.role === UserRole.TUTOR || user.role === UserRole.ADMIN) && user.approved === false) {
+      return res.status(403).json({
+        error: 'Your account is pending approval. Please wait for an administrator to approve your account before logging in.'
+      });
+    }
+
+>>>>>>> ai_feature_clean
     const token = signToken(user);
 
     return res.status(200).json({

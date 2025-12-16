@@ -58,7 +58,11 @@ class VirtualSpaceController {
   }
 
   /**
+<<<<<<< HEAD
    * Join a virtual space (Student)
+=======
+   * Join a virtual space (Student - deprecated, kept for backward compatibility)
+>>>>>>> ai_feature_clean
    */
   public async joinSpace(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -83,6 +87,86 @@ class VirtualSpaceController {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Join a virtual space anonymously (No authentication required)
+   * Students provide only nickname and email
+   */
+  public async joinSpaceAnonymous(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { code } = req.params;
+      const { nickname, email } = req.body;
+
+      // Validate inputs
+      if (!nickname || !nickname.trim()) {
+        res.status(400).json({ error: 'Nickname is required' });
+        return;
+      }
+
+      if (!email || !email.trim()) {
+        res.status(400).json({ error: 'Email is required' });
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^\S+@\S+\.\S+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ error: 'Invalid email format' });
+        return;
+      }
+
+      // Find space by code
+      const space = await VirtualSpaceService.getSpaceByCode(code);
+      if (!space) {
+        res.status(404).json({ error: 'Virtual space not found' });
+        return;
+      }
+
+      // Check if space is active
+      if (space.status !== SpaceStatus.ACTIVE) {
+        res.status(400).json({ error: 'This session is not currently active' });
+        return;
+      }
+
+      // Create or find participant
+      const StudentParticipant = (await import('../models/StudentParticipant')).default;
+      const crypto = require('crypto');
+
+      let participant = await StudentParticipant.findOne({
+        spaceId: space._id,
+        email: email.toLowerCase().trim()
+      });
+
+      if (participant) {
+        // Update nickname if changed
+        participant.nickname = nickname.trim();
+        await participant.save();
+      } else {
+        // Create new participant
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        participant = await StudentParticipant.create({
+          spaceId: space._id,
+          nickname: nickname.trim(),
+          email: email.toLowerCase().trim(),
+          sessionToken
+        });
+      }
+
+      res.status(200).json({
+        participantId: String(participant._id),
+        sessionToken: participant.sessionToken,
+        space
+      });
+    } catch (error: any) {
+      console.error('Error in joinSpaceAnonymous:', error);
+      res.status(500).json({
+        error: error.message || 'Failed to join space'
+      });
+    }
+  }
+
+  /**
+>>>>>>> ai_feature_clean
    * Get tutor's spaces
    */
   public async getTutorSpaces(req: AuthRequest, res: Response): Promise<void> {
@@ -198,6 +282,30 @@ class VirtualSpaceController {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Generate AI session summary
+   */
+  public async generateSessionSummary(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+      const summary = await VirtualSpaceService.generateSessionSummary(id);
+
+      res.status(200).json({ summary });
+    } catch (error: any) {
+      res.status(500).json({
+        error: error.message || 'Failed to generate session summary'
+      });
+    }
+  }
+
+  /**
+>>>>>>> ai_feature_clean
    * Delete a space
    */
   public async deleteSpace(req: AuthRequest, res: Response): Promise<void> {

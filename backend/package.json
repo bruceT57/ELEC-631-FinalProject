@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
   "name": "tutoring-tool-backend",
   "version": "1.0.0",
   "description": "Backend for online tutoring tool",
+=======
+  "name": "lumina-backend",
+  "version": "1.0.0",
+  "description": "Backend for Lumina",
+>>>>>>> ai_feature_clean
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",

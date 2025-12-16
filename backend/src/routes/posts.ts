@@ -40,16 +40,39 @@ const upload = multer({
  * Post Routes
  */
 
+<<<<<<< HEAD
 // POST /api/posts - Create new post
 router.post(
   '/',
   AuthMiddleware.authenticate,
+=======
+// Optional authentication middleware - allows both authenticated and anonymous requests
+const optionalAuth = (req: any, res: any, next: any) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    // Has auth token, use normal authentication
+    return AuthMiddleware.authenticate(req, res, next);
+  }
+  // No auth token, continue without setting req.user
+  next();
+};
+
+// POST /api/posts - Create new post (supports both authenticated and anonymous)
+router.post(
+  '/',
+  optionalAuth,
+>>>>>>> ai_feature_clean
   upload.array('attachments', 5),
   PostController.createPost
 );
 
+<<<<<<< HEAD
 // GET /api/posts/space/:spaceId - Get posts by space
 router.get('/space/:spaceId', AuthMiddleware.authenticate, PostController.getPostsBySpace);
+=======
+// GET /api/posts/space/:spaceId - Get posts by space (accessible to anonymous students)
+router.get('/space/:spaceId', optionalAuth, PostController.getPostsBySpace);
+>>>>>>> ai_feature_clean
 
 // GET /api/posts/student - Get student's posts
 router.get(
@@ -98,4 +121,10 @@ router.get(
   PostController.getStatistics
 );
 
+<<<<<<< HEAD
+=======
+// POST /api/posts/:id/comment - Add student comment to post
+router.post('/:id/comment', optionalAuth, PostController.addStudentComment);
+
+>>>>>>> ai_feature_clean
 export default router;

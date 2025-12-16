@@ -349,3 +349,78 @@
   color: #333;
   margin-bottom: 10px;
 }
+<<<<<<< HEAD
+=======
+
+/* Student Comments Styles */
+
+.student-comments-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.student-comments-section h4 {
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.student-comment {
+  background: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.comment-header strong {
+  color: #667eea;
+}
+
+.comment-time {
+  color: #999;
+  font-size: 11px;
+}
+
+.comment-text {
+  margin: 0;
+  color: #333;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.add-comment-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #ddd;
+}
+
+.comment-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.comment-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.btn-comment {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+>>>>>>> ai_feature_clean

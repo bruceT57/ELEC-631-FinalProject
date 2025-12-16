@@ -11,6 +11,10 @@ export interface IPostMedia {
 export interface IPostData {
   spaceId: string;
   studentId: string;
+<<<<<<< HEAD
+=======
+  studentNickname: string; // For displaying student name
+>>>>>>> ai_feature_clean
   question: string;
   inputType?: string;
   difficultyLevel?: string;
@@ -26,6 +30,10 @@ class PostService {
     const post = await Post.create({
       spaceId: data.spaceId,
       studentId: data.studentId,
+<<<<<<< HEAD
+=======
+      studentNickname: data.studentNickname,
+>>>>>>> ai_feature_clean
       question: data.question,
       inputType: data.inputType,
       difficultyLevel: data.difficultyLevel,
@@ -50,7 +58,14 @@ class PostService {
       const result = await AIRankingService.analyzeQuestion(question);
       await Post.findByIdAndUpdate(postId, {
         difficultyScore: result.difficultyScore,
+<<<<<<< HEAD
         knowledgePoints: result.knowledgePoints,
+=======
+        difficultyLevel: result.difficultyLevel,
+        knowledgePoints: result.knowledgePoints,
+        aiHint: result.hint,
+        keyConceptsDefinitions: result.keyConceptsDefinitions // Save definitions
+>>>>>>> ai_feature_clean
       });
     } catch (err) {
       console.error(`analyzePostInBackground error for post ${postId}:`, err);
@@ -195,6 +210,25 @@ class PostService {
       byLevel: byLevel.map((r: any) => ({ level: r._id, count: r.count })),
     };
   }
+<<<<<<< HEAD
+=======
+
+  /** Add student comment to a post */
+  public async addStudentComment(
+    postId: string,
+    participantId: string,
+    nickname: string,
+    comment: string
+  ) {
+    const post = await Post.findById(postId);
+    if (!post) return null;
+
+    post.addStudentComment(participantId, nickname, comment);
+    await post.save();
+
+    return post.populate('studentId', '-password');
+  }
+>>>>>>> ai_feature_clean
 }
 
 export default new PostService();

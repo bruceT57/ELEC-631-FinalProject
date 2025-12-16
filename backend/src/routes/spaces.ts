@@ -20,7 +20,14 @@ router.post(
 // GET /api/spaces/code/:code - Get space by code (Public for joining)
 router.get('/code/:code', VirtualSpaceController.getSpaceByCode);
 
+<<<<<<< HEAD
 // POST /api/spaces/join/:code - Join a space (Student)
+=======
+// POST /api/spaces/join-anonymous/:code - Join a space anonymously (No auth required)
+router.post('/join-anonymous/:code', VirtualSpaceController.joinSpaceAnonymous);
+
+// POST /api/spaces/join/:code - Join a space (Student - deprecated)
+>>>>>>> ai_feature_clean
 router.post(
   '/join/:code',
   AuthMiddleware.authenticate,
@@ -61,6 +68,17 @@ router.get(
   VirtualSpaceController.getParticipants
 );
 
+<<<<<<< HEAD
+=======
+// POST /api/spaces/:id/summary - Generate AI session summary (Tutor only)
+router.post(
+  '/:id/summary',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(UserRole.TUTOR, UserRole.ADMIN),
+  VirtualSpaceController.generateSessionSummary
+);
+
+>>>>>>> ai_feature_clean
 // DELETE /api/spaces/:id - Delete space (Tutor only)
 router.delete(
   '/:id',

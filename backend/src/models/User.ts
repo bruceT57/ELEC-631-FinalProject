@@ -15,6 +15,12 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+<<<<<<< HEAD
+=======
+  approved: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+>>>>>>> ai_feature_clean
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -60,6 +66,14 @@ const UserSchema = new Schema<IUser>(
       required: true,
       index: true,
     },
+<<<<<<< HEAD
+=======
+    approved: {
+      type: Boolean,
+      default: true, // Existing users are pre-approved
+      index: true,
+    },
+>>>>>>> ai_feature_clean
   },
   { timestamps: true }
 );

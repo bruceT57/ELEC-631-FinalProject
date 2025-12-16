@@ -8,7 +8,11 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/api': {
+<<<<<<< HEAD
         target: 'http://localhost:5000',
+=======
+        target: 'http://localhost:4000',
+>>>>>>> ai_feature_clean
         changeOrigin: true
       }
     }

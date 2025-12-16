@@ -56,7 +56,11 @@ const Login: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+<<<<<<< HEAD
         <h1>Tutoring Tool Login</h1>
+=======
+        <h1>Lumina</h1>
+>>>>>>> ai_feature_clean
 
         {error && <div className="error-message">{error}</div>}
 

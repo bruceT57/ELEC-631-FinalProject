@@ -12,9 +12,16 @@ const Register: React.FC = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
+<<<<<<< HEAD
     role: UserRole.STUDENT
   });
   const [error, setError] = useState('');
+=======
+    role: UserRole.TUTOR
+  });
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+>>>>>>> ai_feature_clean
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +40,10 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+<<<<<<< HEAD
+=======
+    setSuccessMessage('');
+>>>>>>> ai_feature_clean
     setFieldErrors({});
 
     if (formData.password !== formData.confirmPassword) {
@@ -55,7 +66,11 @@ const Register: React.FC = () => {
         return;
       }
 
+<<<<<<< HEAD
       // Redirect based on role from registered user
+=======
+      // Redirect based on role from registered user (only for students)
+>>>>>>> ai_feature_clean
       if (registeredUser?.role === UserRole.STUDENT) {
         navigate('/student/dashboard');
       } else if (registeredUser?.role === UserRole.TUTOR) {
@@ -64,6 +79,27 @@ const Register: React.FC = () => {
         navigate('/admin/dashboard');
       }
     } catch (err: any) {
+<<<<<<< HEAD
+=======
+      // Check if this is an approval-required error
+      if (err.requiresApproval) {
+        setSuccessMessage(err.message || 'Registration successful! Your account is pending approval. An administrator will review your request shortly.');
+        setLoading(false);
+        // Clear the form
+        setFormData({
+          username: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.TUTOR
+        });
+        return;
+      }
+
+      // Handle other errors
+>>>>>>> ai_feature_clean
       const errorData = err.response?.data;
       if (errorData?.details) {
         setFieldErrors(errorData.details);
@@ -78,9 +114,25 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+<<<<<<< HEAD
         <h1>Register for Tutoring Tool</h1>
 
         {error && <div className="error-message">{error}</div>}
+=======
+        <h1>Lumina</h1>
+
+        {error && <div className="error-message">{error}</div>}
+        {successMessage && (
+          <div className="success-message">
+            {successMessage}
+            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+              <a href="/login" style={{ color: 'white', textDecoration: 'underline' }}>
+                Return to Login
+              </a>
+            </div>
+          </div>
+        )}
+>>>>>>> ai_feature_clean
 
         <form onSubmit={handleSubmit}>
           <div className="form-row">
@@ -150,8 +202,13 @@ const Register: React.FC = () => {
               onChange={handleChange}
               disabled={loading}
             >
+<<<<<<< HEAD
               <option value={UserRole.STUDENT}>Student</option>
               <option value={UserRole.TUTOR}>Tutor</option>
+=======
+              <option value={UserRole.TUTOR}>Tutor</option>
+              <option value={UserRole.ADMIN}>Admin</option>
+>>>>>>> ai_feature_clean
             </select>
           </div>
 

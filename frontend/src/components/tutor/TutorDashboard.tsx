@@ -1,9 +1,19 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { VirtualSpace } from '../../types';
 import apiService from '../../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import PostList from '../student/PostList';
+=======
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { VirtualSpace } from '../../types';
+import apiService from '../../services/api';
+import PostList from '../student/PostList';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+>>>>>>> ai_feature_clean
 import './Tutor.css';
 
 const TutorDashboard: React.FC = () => {
@@ -12,6 +22,7 @@ const TutorDashboard: React.FC = () => {
   const [selectedSpace, setSelectedSpace] = useState<VirtualSpace | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [knowledgeSummary, setKnowledgeSummary] = useState('');
+<<<<<<< HEAD
   const [statistics, setStatistics] = useState<any>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
@@ -20,6 +31,43 @@ const TutorDashboard: React.FC = () => {
     description: '',
     startTime: '',
     endTime: ''
+=======
+  const [sessionSummary, setSessionSummary] = useState(''); // Store full AI summary
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [statistics, setStatistics] = useState<any>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
+  
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to format datetime for input
+  const getDefaultStartTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30); // Default to 30 minutes from now
+    return formatDatetimeLocal(now);
+  };
+
+  const getDefaultEndTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 2); // Default to 2 hours from now
+    return formatDatetimeLocal(now);
+  };
+
+  const formatDatetimeLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    startTime: getDefaultStartTime(),
+    endTime: getDefaultEndTime()
+>>>>>>> ai_feature_clean
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,14 +97,30 @@ const TutorDashboard: React.FC = () => {
     setDetailsLoading(true);
     setDetailsError('');
     setKnowledgeSummary('');
+<<<<<<< HEAD
     setStatistics(null);
 
     try {
+=======
+    setSessionSummary(''); // Reset summary
+    setStatistics(null);
+
+    try {
+      // Fetch basic details first
+>>>>>>> ai_feature_clean
       const [summaryData, statsData] = await Promise.all([
         apiService.getKnowledgeSummary(selectedSpace._id),
         apiService.getPostStatistics(selectedSpace._id)
       ]);
 
+<<<<<<< HEAD
+=======
+      // Check if space already has a saved summary
+      if (selectedSpace.aiSessionSummary) {
+        setSessionSummary(selectedSpace.aiSessionSummary);
+      }
+
+>>>>>>> ai_feature_clean
       // Handle knowledge summary - could be array or string
       if (Array.isArray(summaryData.summary)) {
         const summaryText = summaryData.summary
@@ -85,6 +149,7 @@ const TutorDashboard: React.FC = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleCreateSpace = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -94,6 +159,111 @@ const TutorDashboard: React.FC = () => {
       await apiService.createSpace(formData);
       setShowCreateForm(false);
       setFormData({ name: '', description: '', startTime: '', endTime: '' });
+=======
+  const refreshStatistics = async () => {
+    if (!selectedSpace) return;
+    try {
+      const statsData = await apiService.getPostStatistics(selectedSpace._id);
+      if (statsData.statistics) {
+        const stats = statsData.statistics;
+        setStatistics({
+          total: stats.total || 0,
+          answered: stats.answered || 0,
+          unanswered: stats.unanswered || 0,
+          averageScore: stats.avgDifficulty || stats.averageScore || 0
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh statistics:', err);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!selectedSpace) return;
+    setGeneratingSummary(true);
+    try {
+      const { summary } = await apiService.generateSessionSummary(selectedSpace._id);
+      setSessionSummary(summary);
+      // Update local space state to reflect the new summary
+      setSpaces(prev => prev.map(s => s._id === selectedSpace._id ? { ...s, aiSessionSummary: summary } : s));
+    } catch (err: any) {
+      setDetailsError(err.response?.data?.error || 'Failed to generate session summary');
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current || !selectedSpace) return;
+
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2, // Higher scale for better quality
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Session_Report_${selectedSpace.name}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+      setDetailsError('Failed to export PDF report');
+    }
+  };
+
+  const handleCreateSpace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validate that end time is after start time
+    if (formData.startTime && formData.endTime) {
+      const start = new Date(formData.startTime);
+      const end = new Date(formData.endTime);
+
+      if (end <= start) {
+        setError('End time must be after start time');
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    try {
+      // Parse datetime-local values and send as ISO strings
+      // The datetime-local input gives us a string like "2025-12-14T21:46"
+      // We need to interpret this as LOCAL time and convert to UTC properly
+
+      const startDate = new Date(formData.startTime);
+      const endDate = new Date(formData.endTime);
+
+      const spaceData = {
+        name: formData.name,
+        description: formData.description,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString()
+      };
+
+      console.log('Creating space:', {
+        inputStart: formData.startTime,
+        inputEnd: formData.endTime,
+        sentStart: spaceData.startTime,
+        sentEnd: spaceData.endTime
+      });
+
+      await apiService.createSpace(spaceData);
+      setShowCreateForm(false);
+      setFormData({
+        name: '',
+        description: '',
+        startTime: getDefaultStartTime(),
+        endTime: getDefaultEndTime()
+      });
+>>>>>>> ai_feature_clean
       await loadSpaces();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create space');
@@ -112,7 +282,11 @@ const TutorDashboard: React.FC = () => {
   return (
     <div className="dashboard tutor-dashboard">
       <header className="dashboard-header">
+<<<<<<< HEAD
         <h1>Tutor Dashboard</h1>
+=======
+        <h1>Lumina - Tutor Dashboard</h1>
+>>>>>>> ai_feature_clean
         <div className="user-info">
           <span>Welcome, {user?.firstName}!</span>
           <button onClick={logout} className="btn-secondary">
@@ -165,9 +339,19 @@ const TutorDashboard: React.FC = () => {
                     name="startTime"
                     value={formData.startTime}
                     onChange={handleChange}
+<<<<<<< HEAD
                     required
                     disabled={loading}
                   />
+=======
+                    min={formatDatetimeLocal(new Date())}
+                    required
+                    disabled={loading}
+                  />
+                  <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    Your local time: {new Date(formData.startTime).toLocaleString()}
+                  </small>
+>>>>>>> ai_feature_clean
                 </div>
 
                 <div className="form-group">
@@ -177,9 +361,19 @@ const TutorDashboard: React.FC = () => {
                     name="endTime"
                     value={formData.endTime}
                     onChange={handleChange}
+<<<<<<< HEAD
                     required
                     disabled={loading}
                   />
+=======
+                    min={formData.startTime || formatDatetimeLocal(new Date())}
+                    required
+                    disabled={loading}
+                  />
+                  <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    Your local time: {new Date(formData.endTime).toLocaleString()}
+                  </small>
+>>>>>>> ai_feature_clean
                 </div>
 
                 <button type="submit" disabled={loading} className="btn-primary">
@@ -203,7 +397,11 @@ const TutorDashboard: React.FC = () => {
                   <h4>{space.name}</h4>
                   <p className="space-code">Code: {space.spaceCode}</p>
                   <p className="participant-count">
+<<<<<<< HEAD
                     Participants: {space.participants.length}
+=======
+                    Participants: {space.participantCount ?? 0}
+>>>>>>> ai_feature_clean
                   </p>
                   <span className={`status-badge ${space.status}`}>{space.status}</span>
                 </div>
@@ -275,7 +473,95 @@ const TutorDashboard: React.FC = () => {
                 </div>
               )}
 
+<<<<<<< HEAD
               <PostList spaceId={selectedSpace._id} isStudent={false} />
+=======
+              <div className="session-summary-section" style={{ margin: '20px 0', padding: '25px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '24px' }}>🤖</span>
+                    <h3 style={{ margin: 0, color: '#333' }}>AI Session Report</h3>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {sessionSummary && (
+                      <button
+                        onClick={handleExportPDF}
+                        className="btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        📄 Export PDF
+                      </button>
+                    )}
+                    <button 
+                      onClick={handleGenerateSummary} 
+                      disabled={generatingSummary}
+                      className="btn-primary"
+                      style={{ 
+                        backgroundColor: generatingSummary ? '#9575cd' : '#673ab7',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '5px',
+                        boxShadow: '0 2px 5px rgba(103, 58, 183, 0.3)'
+                      }}
+                    >
+                      {generatingSummary ? '🔮 Analyzing...' : (sessionSummary ? '🔄 Regenerate' : '✨ Generate Report')}
+                    </button>
+                  </div>
+                </div>
+
+                {sessionSummary ? (
+                  <div 
+                    ref={reportRef} 
+                    className="ai-report-content" 
+                    style={{ 
+                      backgroundColor: '#fafafa', 
+                      padding: '20px', 
+                      borderRadius: '8px', 
+                      border: '1px solid #e0e0e0',
+                      lineHeight: '1.6',
+                      color: '#333333', // Enforce dark text color
+                      fontSize: '14px'
+                    }}
+                  >
+                    <div style={{ marginBottom: '15px', textAlign: 'center', borderBottom: '2px solid #673ab7', paddingBottom: '8px' }}>
+                      <h2 style={{ color: '#673ab7', margin: '0 0 4px 0', fontSize: '1.4em' }}>Session Summary Report</h2>
+                      <p style={{ margin: 0, color: '#666', fontSize: '0.85em' }}>
+                        Space: {selectedSpace.name} | Date: {new Date().toLocaleDateString()}
+                      </p>
+                    </div>
+                    
+                     {/* Enhanced markdown rendering */}
+                    <div className="markdown-body" dangerouslySetInnerHTML={{ 
+                      __html: sessionSummary
+                        .replace(/\n/g, '<br/>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/^# (.*$)/gim, '<h3 style="color: #5e35b1; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; margin-bottom: 8px; font-size: 1.2em;">$1</h3>')
+                        .replace(/^## (.*$)/gim, '<h4 style="color: #5e35b1; margin-top: 12px; margin-bottom: 5px; font-size: 1.1em;">$1</h4>')
+                        .replace(/^- (.*$)/gim, '<li style="margin-left: 15px; margin-bottom: 4px;">$1</li>')
+                    }} />
+                  </div>
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '40px', 
+                    backgroundColor: '#f9f9f9', 
+                    borderRadius: '8px',
+                    border: '1px dashed #ccc' 
+                  }}>
+                    <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px', opacity: 0.5 }}>📊</span>
+                    <p style={{ color: '#666', fontStyle: 'italic', margin: 0 }}>
+                      Ready to analyze student questions. Click "Generate Report" to identify main topics, common misconceptions, and review suggestions.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <PostList
+                spaceId={selectedSpace._id}
+                isStudent={false}
+                onPostsUpdate={refreshStatistics}
+              />
+>>>>>>> ai_feature_clean
             </>
           ) : (
             <div className="empty-state-main">

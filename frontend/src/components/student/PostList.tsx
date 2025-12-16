@@ -5,9 +5,18 @@ import apiService from '../../services/api';
 interface PostListProps {
   spaceId: string;
   isStudent: boolean;
+<<<<<<< HEAD
 }
 
 const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
+=======
+  sessionToken?: string; // For anonymous students
+  participantId?: string; // For student comments
+  onPostsUpdate?: () => void; // Callback for statistics refresh
+}
+
+const PostList: React.FC<PostListProps> = ({ spaceId, isStudent, participantId, onPostsUpdate }) => {
+>>>>>>> ai_feature_clean
   const [posts, setPosts] = useState<Post[]>([]);
   const [sortBy, setSortBy] = useState<'difficulty' | 'time'>('difficulty');
   const [loading, setLoading] = useState(false);
@@ -15,6 +24,7 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
   const [tutorResponse, setTutorResponse] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+<<<<<<< HEAD
   useEffect(() => {
     loadPosts();
   }, [spaceId, sortBy]);
@@ -28,6 +38,37 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
       console.error('Failed to load posts:', err);
     } finally {
       setLoading(false);
+=======
+  // Student comment state
+  const [commentText, setCommentText] = useState<{ [postId: string]: string }>({});
+  const [submittingComment, setSubmittingComment] = useState<{ [postId: string]: boolean }>({});
+
+  useEffect(() => {
+    loadPosts();
+
+    // Set up polling for new posts every 5 seconds
+    const intervalId = setInterval(() => {
+      loadPosts(false); // Pass false to skip loading spinner on background updates
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [spaceId, sortBy]);
+
+  const loadPosts = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    try {
+      const { posts } = await apiService.getPostsBySpace(spaceId, sortBy);
+      setPosts(posts);
+
+      // Trigger callback for statistics refresh
+      if (onPostsUpdate) {
+        onPostsUpdate();
+      }
+    } catch (err) {
+      console.error('Failed to load posts:', err);
+    } finally {
+      if (showLoading) setLoading(false);
+>>>>>>> ai_feature_clean
     }
   };
 
@@ -47,6 +88,25 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
     }
   };
 
+<<<<<<< HEAD
+=======
+  const handleAddComment = async (postId: string) => {
+    const comment = commentText[postId]?.trim();
+    if (!comment || !participantId) return;
+
+    setSubmittingComment({ ...submittingComment, [postId]: true });
+    try {
+      await apiService.addStudentComment(postId, participantId, comment);
+      setCommentText({ ...commentText, [postId]: '' });
+      await loadPosts(false); // Reload without spinner
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+    } finally {
+      setSubmittingComment({ ...submittingComment, [postId]: false });
+    }
+  };
+
+>>>>>>> ai_feature_clean
   const getDifficultyColor = (level: DifficultyLevel): string => {
     switch (level) {
       case DifficultyLevel.EASY:
@@ -82,7 +142,11 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
             <div className="post-header">
               <div className="post-author">
                 <strong>
+<<<<<<< HEAD
                   {post.studentId.firstName} {post.studentId.lastName}
+=======
+                  {post.studentNickname || (typeof post.studentId !== 'string' ? `${post.studentId.firstName} ${post.studentId.lastName}` : 'Student')}
+>>>>>>> ai_feature_clean
                 </strong>
                 <span className="post-time">
                   {new Date(post.createdAt).toLocaleString()}
@@ -126,6 +190,39 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
               </div>
             )}
 
+<<<<<<< HEAD
+=======
+            {!isStudent && post.aiHint && (
+              <div className="ai-hint-box" style={{ 
+                backgroundColor: '#f0f7ff', 
+                padding: '15px', 
+                margin: '10px 0', 
+                borderRadius: '8px',
+                borderLeft: '4px solid #2196f3',
+                fontSize: '0.95em',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong style={{ color: '#1565c0', display: 'block', marginBottom: '5px' }}>💡 AI Hint for Tutor:</strong>
+                  <p style={{ margin: 0, lineHeight: '1.5' }}>{post.aiHint}</p>
+                </div>
+                
+                {post.keyConceptsDefinitions && post.keyConceptsDefinitions.length > 0 && (
+                  <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #e3f2fd' }}>
+                    <strong style={{ color: '#1565c0', display: 'block', marginBottom: '8px' }}>📚 Key Concepts:</strong>
+                    <ul style={{ margin: 0, paddingLeft: '20px', listStyleType: 'disc' }}>
+                      {post.keyConceptsDefinitions.map((def, idx) => (
+                        <li key={idx} style={{ marginBottom: '6px' }}>
+                          <strong>{def.term}:</strong> <span style={{ color: '#546e7a' }}>{def.definition}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+>>>>>>> ai_feature_clean
             {post.isAnswered ? (
               <div className="tutor-response">
                 <strong>Tutor Response:</strong>
@@ -175,6 +272,47 @@ const PostList: React.FC<PostListProps> = ({ spaceId, isStudent }) => {
             ) : (
               <div className="unanswered-badge">Waiting for tutor response...</div>
             )}
+<<<<<<< HEAD
+=======
+
+            {/* Student Comments Section - Visible to EVERYONE (students, tutors, admins) */}
+            {post.studentComments && post.studentComments.length > 0 && (
+              <div className="student-comments-section">
+                <h4>Student Responses:</h4>
+                {post.studentComments.map((comment, idx) => (
+                  <div key={idx} className="student-comment">
+                    <div className="comment-header">
+                      <strong>{comment.nickname}</strong>
+                      <span className="comment-time">
+                        {new Date(comment.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="comment-text">{comment.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Comment Section - ONLY for Students */}
+            {isStudent && participantId && (
+              <div className="add-comment-section">
+                <textarea
+                  value={commentText[post._id] || ''}
+                  onChange={(e) => setCommentText({ ...commentText, [post._id]: e.target.value })}
+                  placeholder="Share your thoughts or help with this question..."
+                  rows={2}
+                  className="comment-textarea"
+                />
+                <button
+                  onClick={() => handleAddComment(post._id)}
+                  disabled={submittingComment[post._id] || !commentText[post._id]?.trim()}
+                  className="btn-secondary btn-comment"
+                >
+                  {submittingComment[post._id] ? 'Posting...' : 'Add Response'}
+                </button>
+              </div>
+            )}
+>>>>>>> ai_feature_clean
           </div>
         ))
       )}

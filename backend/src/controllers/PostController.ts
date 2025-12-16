@@ -9,6 +9,7 @@ import { InputType } from '../models';
 class PostController {
   /**
    * Create a new post
+<<<<<<< HEAD
    */
   public async createPost(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -18,15 +19,64 @@ class PostController {
       }
 
       const { spaceId, question, inputType, originalText } = req.body;
+=======
+   * Supports both authenticated users and anonymous students
+   */
+  public async createPost(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { spaceId, question, inputType, originalText, participantId, sessionToken } = req.body;
+>>>>>>> ai_feature_clean
 
       if (!spaceId || !question || !inputType) {
         res.status(400).json({ error: 'Missing required fields' });
         return;
       }
 
+<<<<<<< HEAD
       const postData: IPostData = {
         spaceId,
         studentId: req.user.userId,
+=======
+      let studentId: string;
+      let studentNickname: string;
+
+      // Check if anonymous student
+      if (participantId && sessionToken) {
+        // Verify session token
+        const StudentParticipant = (await import('../models/StudentParticipant')).default;
+        const participant = await StudentParticipant.findOne({
+          _id: participantId,
+          sessionToken,
+          spaceId
+        });
+
+        if (!participant) {
+          res.status(401).json({ error: 'Invalid session' });
+          return;
+        }
+
+        studentId = String(participant._id);
+        studentNickname = participant.nickname;
+      } else if (req.user) {
+        // Authenticated user (tutor/admin posting on behalf, or legacy student)
+        studentId = req.user.userId;
+        const User = (await import('../models/User')).default;
+        const user = await User.findById(studentId);
+        if (!user) {
+          res.status(404).json({ error: 'User not found' });
+          return;
+        }
+        studentNickname = `${user.firstName} ${user.lastName}`;
+      } else {
+        res.status(401).json({ error: 'Unauthorized - Please provide session credentials or login' });
+        return;
+      }
+
+      const postData: IPostData = {
+        spaceId,
+        studentId,
+        studentNickname,
+>>>>>>> ai_feature_clean
         question,
         inputType,
         originalText,
@@ -49,6 +99,10 @@ class PostController {
         post
       });
     } catch (error: any) {
+<<<<<<< HEAD
+=======
+      console.error('Error in createPost:', error);
+>>>>>>> ai_feature_clean
       res.status(400).json({
         error: error.message || 'Failed to create post'
       });
@@ -259,6 +313,49 @@ class PostController {
       });
     }
   }
+<<<<<<< HEAD
+=======
+
+  /**
+   * Add student comment to a post
+   */
+  public async addStudentComment(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { participantId, comment } = req.body;
+
+      if (!participantId || !comment) {
+        res.status(400).json({ error: 'Missing required fields' });
+        return;
+      }
+
+      // Get participant nickname
+      const StudentParticipant = (await import('../models/StudentParticipant')).default;
+      const participant = await StudentParticipant.findById(participantId);
+
+      if (!participant) {
+        res.status(404).json({ error: 'Participant not found' });
+        return;
+      }
+
+      const post = await PostService.addStudentComment(id, String(participant._id), participant.nickname, comment);
+
+      if (!post) {
+        res.status(404).json({ error: 'Post not found' });
+        return;
+      }
+
+      res.status(200).json({
+        message: 'Comment added successfully',
+        post
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        error: error.message || 'Failed to add comment'
+      });
+    }
+  }
+>>>>>>> ai_feature_clean
 }
 
 export default new PostController();

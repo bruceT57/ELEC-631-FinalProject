@@ -9,12 +9,22 @@ export enum UserRole {
 
 export interface User {
   id: string;
+<<<<<<< HEAD
+=======
+  _id: string; // MongoDB ID
+>>>>>>> ai_feature_clean
   username: string;
   email: string;
   role: UserRole;
   firstName: string;
   lastName: string;
+<<<<<<< HEAD
   createdAt: string;
+=======
+  approved?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+>>>>>>> ai_feature_clean
 }
 
 /**
@@ -37,6 +47,11 @@ export interface VirtualSpace {
   endTime: string;
   status: SpaceStatus;
   participants: User[];
+<<<<<<< HEAD
+=======
+  participantCount?: number; // Actual count from StudentParticipant collection
+  aiSessionSummary?: string; // AI-generated summary
+>>>>>>> ai_feature_clean
   createdAt: string;
   updatedAt: string;
 }
@@ -70,10 +85,25 @@ export interface MediaAttachment {
   originalName: string;
 }
 
+<<<<<<< HEAD
 export interface Post {
   _id: string;
   spaceId: string | VirtualSpace;
   studentId: User;
+=======
+export interface StudentComment {
+  participantId: string;
+  nickname: string;
+  comment: string;
+  timestamp: string;
+}
+
+export interface Post {
+  _id: string;
+  spaceId: string | VirtualSpace;
+  studentId: User | string;
+  studentNickname?: string; // For anonymous students
+>>>>>>> ai_feature_clean
   question: string;
   inputType: InputType;
   originalText?: string;
@@ -81,6 +111,12 @@ export interface Post {
   difficultyLevel: DifficultyLevel;
   difficultyScore: number;
   knowledgePoints: KnowledgePoint[];
+<<<<<<< HEAD
+=======
+  aiHint?: string; // AI-generated hint for tutor
+  keyConceptsDefinitions?: { term: string; definition: string }[];
+  studentComments?: StudentComment[]; // Student-to-student responses
+>>>>>>> ai_feature_clean
   tutorResponse?: string;
   isAnswered: boolean;
   answeredAt?: string;
@@ -133,6 +169,12 @@ export interface RegisterData {
 
 export interface AuthResponse {
   user: User;
+<<<<<<< HEAD
   token: string;
   message: string;
+=======
+  token?: string;
+  message: string;
+  requiresApproval?: boolean;
+>>>>>>> ai_feature_clean
 }

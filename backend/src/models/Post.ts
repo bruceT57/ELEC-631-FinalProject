@@ -39,11 +39,29 @@ export interface IKnowledgePoint {
 }
 
 /**
+<<<<<<< HEAD
+=======
+ * Student comment interface
+ */
+export interface IStudentComment {
+  participantId: string;
+  nickname: string;
+  comment: string;
+  timestamp: Date;
+}
+
+/**
+>>>>>>> ai_feature_clean
  * Post interface extending Mongoose Document
  */
 export interface IPost extends Document {
   spaceId: mongoose.Types.ObjectId;
+<<<<<<< HEAD
   studentId: mongoose.Types.ObjectId;
+=======
+  studentId: mongoose.Types.ObjectId; // References StudentParticipant
+  studentNickname: string; // Denormalized for performance
+>>>>>>> ai_feature_clean
   question: string;
   inputType: InputType;
   originalText?: string;
@@ -51,6 +69,12 @@ export interface IPost extends Document {
   difficultyLevel: DifficultyLevel;
   difficultyScore: number;
   knowledgePoints: IKnowledgePoint[];
+<<<<<<< HEAD
+=======
+  aiHint?: string; // AI-generated hint/overview for tutors
+  keyConceptsDefinitions?: { term: string; definition: string }[]; // AI-generated definitions
+  studentComments: IStudentComment[]; // Student-to-student responses
+>>>>>>> ai_feature_clean
   tutorResponse?: string;
   isAnswered: boolean;
   answeredAt?: Date;
@@ -59,6 +83,10 @@ export interface IPost extends Document {
   updatedAt: Date;
   markAsAnswered(tutorId: mongoose.Types.ObjectId, response: string): void;
   updateDifficultyRanking(level: DifficultyLevel, score: number): void;
+<<<<<<< HEAD
+=======
+  addStudentComment(participantId: string, nickname: string, comment: string): void;
+>>>>>>> ai_feature_clean
 }
 
 /**
@@ -74,10 +102,22 @@ const PostSchema: Schema = new Schema(
     },
     studentId: {
       type: Schema.Types.ObjectId,
+<<<<<<< HEAD
       ref: 'User',
       required: true,
       index: true
     },
+=======
+      ref: 'StudentParticipant',
+      required: true,
+      index: true
+    },
+    studentNickname: {
+      type: String,
+      required: true,
+      trim: true
+    },
+>>>>>>> ai_feature_clean
     question: {
       type: String,
       required: true,
@@ -118,6 +158,28 @@ const PostSchema: Schema = new Schema(
         concept: { type: String, required: true }
       }
     ],
+<<<<<<< HEAD
+=======
+    aiHint: {
+      type: String,
+      trim: true,
+      maxlength: 2000
+    },
+    keyConceptsDefinitions: [
+      {
+        term: { type: String, required: true },
+        definition: { type: String, required: true }
+      }
+    ],
+    studentComments: [
+      {
+        participantId: { type: String, required: true },
+        nickname: { type: String, required: true },
+        comment: { type: String, required: true, maxlength: 1000 },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ],
+>>>>>>> ai_feature_clean
     tutorResponse: {
       type: String,
       trim: true,
@@ -165,6 +227,25 @@ PostSchema.methods.updateDifficultyRanking = function (
 };
 
 /**
+<<<<<<< HEAD
+=======
+ * Method to add student comment
+ */
+PostSchema.methods.addStudentComment = function (
+  participantId: string,
+  nickname: string,
+  comment: string
+): void {
+  this.studentComments.push({
+    participantId,
+    nickname,
+    comment,
+    timestamp: new Date()
+  });
+};
+
+/**
+>>>>>>> ai_feature_clean
  * Index for efficient querying
  */
 PostSchema.index({ spaceId: 1, difficultyScore: -1 });

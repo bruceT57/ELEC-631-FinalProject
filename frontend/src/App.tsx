@@ -4,8 +4,12 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UserRole } from './types';
 import Login from './components/common/Login';
 import Register from './components/common/Register';
+<<<<<<< HEAD
 import JoinSpace from './components/common/JoinSpace';
 import StudentDashboard from './components/student/StudentDashboard';
+=======
+import StudentJoin from './components/student/StudentJoin';
+>>>>>>> ai_feature_clean
 import TutorDashboard from './components/tutor/TutorDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import './App.css';
@@ -46,9 +50,13 @@ const AppRoutes: React.FC = () => {
         path="/"
         element={
           isAuthenticated ? (
+<<<<<<< HEAD
             user?.role === UserRole.STUDENT ? (
               <Navigate to="/student/dashboard" replace />
             ) : user?.role === UserRole.TUTOR ? (
+=======
+            user?.role === UserRole.TUTOR ? (
+>>>>>>> ai_feature_clean
               <Navigate to="/tutor/dashboard" replace />
             ) : (
               <Navigate to="/admin/dashboard" replace />
@@ -61,6 +69,7 @@ const AppRoutes: React.FC = () => {
 
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+<<<<<<< HEAD
       <Route path="/join/:spaceCode" element={<JoinSpace />} />
 
       <Route
@@ -71,6 +80,11 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+=======
+
+      {/* Anonymous student join - no authentication required */}
+      <Route path="/join/:spaceCode" element={<StudentJoin />} />
+>>>>>>> ai_feature_clean
 
       <Route
         path="/tutor/dashboard"
