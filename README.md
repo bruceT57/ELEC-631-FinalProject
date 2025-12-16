@@ -140,8 +140,6 @@ class Post extends Document {
 }
 ```
 
-<<<<<<< HEAD
-=======
 ## Quick Links
 
 - **[Local Development Setup](#setup-instructions)** - Run locally on your machine
@@ -150,7 +148,6 @@ class Post extends Document {
 - **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Step-by-step deployment checklist
 - **[Quick Start Guide](QUICKSTART.md)** - 5-minute local setup
 
->>>>>>> ai_feature_clean
 ## Setup Instructions
 
 ### Prerequisites
@@ -453,8 +450,6 @@ npm test
 - Request rate limiting to prevent abuse
 - Optimized database queries with population
 
-<<<<<<< HEAD
-=======
 ## Deployment
 
 The Tutoring Tool can be deployed to various hosting platforms. Complete deployment guides are available:
@@ -505,7 +500,6 @@ For all platforms:
 3. Build: `npm run build:production`
 4. Start: `npm run start:production`
 
->>>>>>> ai_feature_clean
 ## Troubleshooting
 
 ### MongoDB Connection Issues
