@@ -17,17 +17,35 @@
 .create-space-form label {
   display: block;
   margin-bottom: 5px;
-  color: #555;
-  font-weight: 500;
+  color: #333;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .create-space-form input,
 .create-space-form textarea {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
   font-size: 14px;
+  color: #333; /* Dark text for visibility */
+  background-color: #ffffff; /* White background */
+  transition: all 0.2s ease;
+}
+
+.create-space-form input:focus,
+.create-space-form textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.create-space-form input:disabled,
+.create-space-form textarea:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .participant-count {

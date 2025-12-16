@@ -21,11 +21,33 @@ const TutorDashboard: React.FC = () => {
   
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // Helper function to format datetime for input
+  const getDefaultStartTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30); // Default to 30 minutes from now
+    return formatDatetimeLocal(now);
+  };
+
+  const getDefaultEndTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 2); // Default to 2 hours from now
+    return formatDatetimeLocal(now);
+  };
+
+  const formatDatetimeLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    startTime: '',
-    endTime: ''
+    startTime: getDefaultStartTime(),
+    endTime: getDefaultEndTime()
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -157,12 +179,50 @@ const TutorDashboard: React.FC = () => {
   const handleCreateSpace = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate that end time is after start time
+    if (formData.startTime && formData.endTime) {
+      const start = new Date(formData.startTime);
+      const end = new Date(formData.endTime);
+
+      if (end <= start) {
+        setError('End time must be after start time');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
-      await apiService.createSpace(formData);
+      // Parse datetime-local values and send as ISO strings
+      // The datetime-local input gives us a string like "2025-12-14T21:46"
+      // We need to interpret this as LOCAL time and convert to UTC properly
+
+      const startDate = new Date(formData.startTime);
+      const endDate = new Date(formData.endTime);
+
+      const spaceData = {
+        name: formData.name,
+        description: formData.description,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString()
+      };
+
+      console.log('Creating space:', {
+        inputStart: formData.startTime,
+        inputEnd: formData.endTime,
+        sentStart: spaceData.startTime,
+        sentEnd: spaceData.endTime
+      });
+
+      await apiService.createSpace(spaceData);
       setShowCreateForm(false);
-      setFormData({ name: '', description: '', startTime: '', endTime: '' });
+      setFormData({
+        name: '',
+        description: '',
+        startTime: getDefaultStartTime(),
+        endTime: getDefaultEndTime()
+      });
       await loadSpaces();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create space');
@@ -234,9 +294,13 @@ const TutorDashboard: React.FC = () => {
                     name="startTime"
                     value={formData.startTime}
                     onChange={handleChange}
+                    min={formatDatetimeLocal(new Date())}
                     required
                     disabled={loading}
                   />
+                  <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    Your local time: {new Date(formData.startTime).toLocaleString()}
+                  </small>
                 </div>
 
                 <div className="form-group">
@@ -246,9 +310,13 @@ const TutorDashboard: React.FC = () => {
                     name="endTime"
                     value={formData.endTime}
                     onChange={handleChange}
+                    min={formData.startTime || formatDatetimeLocal(new Date())}
                     required
                     disabled={loading}
                   />
+                  <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    Your local time: {new Date(formData.endTime).toLocaleString()}
+                  </small>
                 </div>
 
                 <button type="submit" disabled={loading} className="btn-primary">
